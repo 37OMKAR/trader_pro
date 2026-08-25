@@ -14,6 +14,8 @@ import { StockDetailModal } from "@/components/StockDetailModal";
 import { AIPredictionsView } from "@/components/AIPredictionsView";
 import { DerivativesView } from "@/components/DerivativesView";
 import { StrategyLabView } from "@/components/StrategyLabView";
+import { PaperTradingView } from "@/components/PaperTradingView";
+import { TournamentsView } from "@/components/TournamentsView";
 import { MarketAPI } from "@/lib/api";
 import {
   MarketStatusResponse,
@@ -193,6 +195,12 @@ export default function Home() {
 
           {/* TAB: Strategy Lab & Backtest */}
           {activeTab === "strategylab" && <StrategyLabView />}
+
+          {/* TAB: Strategy Tournaments & Leaderboard */}
+          {activeTab === "tournaments" && <TournamentsView />}
+
+          {/* TAB: Paper Trading Terminal */}
+          {activeTab === "paper" && <PaperTradingView />}
 
           {/* TAB: AI Predictions View */}
           {activeTab === "predictions" && (
