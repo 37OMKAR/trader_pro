@@ -10,9 +10,20 @@ interface TopBarProps {
   indices: IndexQuote[];
   isConnected: boolean;
   onRefresh: () => void;
+  onOpenTelegram?: () => void;
+  onOpenAvatar?: () => void;
+  onOpenSkills?: () => void;
 }
 
-export function TopBar({ status, indices, isConnected, onRefresh }: TopBarProps) {
+export function TopBar({ 
+  status, 
+  indices, 
+  isConnected, 
+  onRefresh,
+  onOpenTelegram,
+  onOpenAvatar,
+  onOpenSkills
+}: TopBarProps) {
   const [istTime, setIstTime] = useState<string>("");
 
   useEffect(() => {
@@ -95,11 +106,44 @@ export function TopBar({ status, indices, isConnected, onRefresh }: TopBarProps)
         })}
       </div>
 
-      {/* Right: Live Connection & Actions */}
+      {/* Right: Quick Action Launchers & Live Status */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#64748b]">
+        {onOpenTelegram && (
+          <button
+            onClick={onOpenTelegram}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0284c7]/20 hover:bg-[#0284c7]/30 text-sky-400 border border-sky-500/30 text-xs font-medium transition"
+            title="Open Telegram Alert Bot"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Telegram Bot</span>
+          </button>
+        )}
+
+        {onOpenAvatar && (
+          <button
+            onClick={onOpenAvatar}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#a855f7]/20 hover:bg-[#a855f7]/30 text-purple-400 border border-purple-500/30 text-xs font-medium transition"
+            title="Open Talking Avatar Studio"
+          >
+            <Video className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Avatar Studio</span>
+          </button>
+        )}
+
+        {onOpenSkills && (
+          <button
+            onClick={onOpenSkills}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#eab308]/20 hover:bg-[#eab308]/30 text-amber-400 border border-amber-500/30 text-xs font-medium transition"
+            title="Open Hermes Skills Matrix"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Skills Matrix</span>
+          </button>
+        )}
+
+        <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#64748b] ml-2">
           <Radio className={`w-3.5 h-3.5 ${isConnected ? "text-emerald-400 pulse-active" : "text-amber-400"}`} />
-          <span>{isConnected ? "WS STREAM" : "HTTP POLLING"}</span>
+          <span>{isConnected ? "WS STREAM" : "HTTP"}</span>
         </div>
 
         <button

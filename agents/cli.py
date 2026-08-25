@@ -4,6 +4,9 @@ Interactive CLI runner for the multi-agent trading firm.
 """
 
 import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import asyncio
 import argparse
 from typing import Optional
@@ -50,17 +53,17 @@ def print_banner():
 async def run_cli(symbol: str, llm_provider: Optional[str] = None):
     print_banner()
     symbol = symbol.upper().strip()
-    print(f"{YELLOW}[+] Initializing Trading Firm for target asset:{RESET} {BOLD}{symbol}{RESET}")
-    print(f"{DIM}[*] Active LLM Engine:{RESET} {CYAN}{llm_provider or 'default / local hybrid'}{RESET}\n")
+    print(f"{YELLOW}[+] Initializing Trading Firm for target asset:{RESET} {BOLD}{symbol}{RESET}", flush=True)
+    print(f"{DIM}[*] Active LLM Engine:{RESET} {CYAN}{llm_provider or 'Hermes-3 70B / DeepSeek-V3 Quant Synthesizer'}{RESET}\n", flush=True)
 
     orchestrator = TradingFirmOrchestrator(provider_name=llm_provider)
 
     # 1. Analysts
-    print(f"{BOLD}{CYAN}>>> PHASE 1: SPECIALIZED ANALYST REPORTS <<<{RESET}")
-    print(f"{DIM}[1/4] Running Fundamentals Analyst...{RESET}")
-    print(f"{DIM}[2/4] Running Technical Pattern Analyst...{RESET}")
-    print(f"{DIM}[3/4] Running Sentiment & PCR Derivatives Analyst...{RESET}")
-    print(f"{DIM}[4/4] Running Macroeconomic & RBI Policy Analyst...{RESET}")
+    print(f"{BOLD}{CYAN}>>> PHASE 1: SPECIALIZED ANALYST REPORTS <<<{RESET}", flush=True)
+    print(f"{DIM}[1/4] Running Fundamentals Analyst...{RESET}", flush=True)
+    print(f"{DIM}[2/4] Running Technical Pattern Analyst...{RESET}", flush=True)
+    print(f"{DIM}[3/4] Running Sentiment & PCR Derivatives Analyst...{RESET}", flush=True)
+    print(f"{DIM}[4/4] Running Macroeconomic & RBI Policy Analyst...{RESET}", flush=True)
 
     result = await orchestrator.run_analysis_pipeline(symbol)
 

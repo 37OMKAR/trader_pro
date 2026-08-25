@@ -40,6 +40,7 @@ export default function Home() {
   const [selectedSymbol, setSelectedSymbol] = useState<string>("NIFTY 50");
   const [timeframe, setTimeframe] = useState<string>("1D");
   const [modalStock, setModalStock] = useState<string | null>(null);
+  const [isTelegramModalOpen, setIsTelegramModalOpen] = useState<boolean>(false);
   
   // Data States
   const [status, setStatus] = useState<MarketStatusResponse | null>(null);
@@ -193,6 +194,9 @@ export default function Home() {
             loadMarketData();
             loadChartData();
           }}
+          onOpenTelegram={() => setIsTelegramModalOpen(true)}
+          onOpenAvatar={() => setActiveTab("avatar")}
+          onOpenSkills={() => setActiveTab("skills")}
         />
 
         {/* Scrollable Dashboard Body */}
@@ -285,6 +289,15 @@ export default function Home() {
 
       {/* Deep-Dive Stock Details Modal */}
       <StockDetailModal symbol={modalStock} onClose={() => setModalStock(null)} />
+
+      {/* Telegram Alert Connector Modal */}
+      <TelegramConnectorModal
+        isOpen={isTelegramModalOpen || activeTab === "telegram"}
+        onClose={() => {
+          setIsTelegramModalOpen(false);
+          if (activeTab === "telegram") setActiveTab("overview");
+        }}
+      />
     </div>
   );
 }

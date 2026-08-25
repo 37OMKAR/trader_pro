@@ -18,6 +18,7 @@ import {
   Users,
   Bell,
   Wallet,
+  Send,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -54,6 +55,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         { id: "paper", label: "Paper Trading", icon: Wallet },
         { id: "risk", label: "Portfolio Risk & VaR", icon: ShieldAlert },
         { id: "alerts", label: "Alert Engine", icon: Bell },
+        { id: "telegram", label: "Telegram Bot Alerts", icon: Send },
         { id: "tutor", label: "AI Market Tutor", icon: GraduationCap },
       ],
     },

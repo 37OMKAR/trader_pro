@@ -6,12 +6,14 @@ Provides live option chain strike ladders, PCR, Max Pain, and Greeks.
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Query, HTTPException
 from packages.derivatives_engine.option_chain import OptionChainEngine
+from packages.market_data.yahoo_provider import YahooFinanceMarketDataProvider
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
 
 router = APIRouter(prefix="/derivatives", tags=["Derivatives & Options"])
 
 option_chain_engine = OptionChainEngine()
-market_provider = DevelopmentMarketDataProvider()
+live_market_provider = YahooFinanceMarketDataProvider()
+fallback_provider = DevelopmentMarketDataProvider()
 
 
 @router.get("/option-chain/{symbol}")
@@ -21,11 +23,20 @@ async def get_option_chain(
 ):
     """Fetch live option chain with Greeks and OI for NIFTY, BANK NIFTY, or any F&O stock."""
     symbol_upper = symbol.upper()
+    spot_price = 24500.0
     try:
-        quote = await market_provider.get_quote(symbol_upper)
-        spot_price = quote.last_price
+        quote = await live_market_provider.get_quote(symbol_upper)
+        if quote and quote.last_price > 0:
+            spot_price = quote.last_price
+        else:
+            dev_quote = await fallback_provider.get_quote(symbol_upper)
+            spot_price = dev_quote.last_price
     except Exception:
-        spot_price = 24500.0 if "NIFTY" in symbol_upper else 1500.0
+        try:
+            dev_quote = await fallback_provider.get_quote(symbol_upper)
+            spot_price = dev_quote.last_price
+        except Exception:
+            spot_price = 24500.0 if "NIFTY" in symbol_upper else 1500.0
 
     return option_chain_engine.generate_option_chain(
         symbol=symbol_upper,
