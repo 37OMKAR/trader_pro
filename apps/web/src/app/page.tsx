@@ -20,6 +20,9 @@ import { AgentActivityView } from "@/components/AgentActivityView";
 import { AlertsView } from "@/components/AlertsView";
 import { PortfolioRiskView } from "@/components/PortfolioRiskView";
 import { MarketTutorView } from "@/components/MarketTutorView";
+import { HermesSkillsView } from "@/components/HermesSkillsView";
+import { TalkingAvatarStudio } from "@/components/TalkingAvatarStudio";
+import { TelegramConnectorModal } from "@/components/TelegramConnectorModal";
 import { MarketAPI } from "@/lib/api";
 import {
   MarketStatusResponse,
@@ -205,6 +208,12 @@ export default function Home() {
 
           {/* TAB: Hermes Supervisor Agent Hub */}
           {activeTab === "agentactivity" && <AgentActivityView />}
+
+          {/* TAB: Hermes Skills Matrix */}
+          {activeTab === "skills" && <HermesSkillsView />}
+
+          {/* TAB: Talking Avatar Video Studio */}
+          {activeTab === "avatar" && <TalkingAvatarStudio />}
 
           {/* TAB: Paper Trading Terminal */}
           {activeTab === "paper" && <PaperTradingView />}

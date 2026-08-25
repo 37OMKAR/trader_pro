@@ -188,6 +188,79 @@ class PaperTradeModel(Base):
     quantity = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)
     amount = Column(Float, nullable=False)
+    fee = Column(Float, default=0.0)
     order_type = Column(String(20), default="MARKET")
     status = Column(String(20), default="FILLED")
     executed_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PaperPositionModel(Base):
+    __tablename__ = "paper_positions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    account_id = Column(String(100), ForeignKey("paper_accounts.account_id"), nullable=False)
+    symbol = Column(String(50), nullable=False)
+    quantity = Column(Integer, default=0, nullable=False)
+    average_price = Column(Float, default=0.0, nullable=False)
+    current_price = Column(Float, default=0.0)
+    invested_value = Column(Float, default=0.0)
+    current_value = Column(Float, default=0.0)
+    unrealized_pnl = Column(Float, default=0.0)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class AgentDeliberationModel(Base):
+    __tablename__ = "agent_deliberations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    deliberation_id = Column(String(100), unique=True, index=True, nullable=False)
+    symbol = Column(String(50), index=True, nullable=False)
+    horizon = Column(String(20), default="5D")
+    market_regime = Column(String(50), default="BULL")
+    analysts_data = Column(JSON, nullable=True)
+    bullish_thesis = Column(JSON, nullable=True)
+    bearish_thesis = Column(JSON, nullable=True)
+    lead_trader_order = Column(JSON, nullable=True)
+    risk_committee_verdict = Column(JSON, nullable=True)
+    hermes_memo = Column(Text, nullable=True)
+    status = Column(String(50), default="APPROVED")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class TournamentLeaderboardModel(Base):
+    __tablename__ = "tournament_leaderboard"
+
+    id = Column(Integer, primary_key=True, index=True)
+    strategy_id = Column(String(100), unique=True, index=True, nullable=False)
+    name = Column(String(200), nullable=False)
+    version = Column(String(50), default="v1.0")
+    asset = Column(String(50), default="RELIANCE")
+    rank = Column(Integer, default=1)
+    strategy_score = Column(Float, default=0.0)
+    badge = Column(String(50), default="UNDER_EVALUATION")
+    tier = Column(String(50), default="BRONZE")
+    cagr_pct = Column(Float, default=0.0)
+    sharpe_ratio = Column(Float, default=0.0)
+    max_drawdown_pct = Column(Float, default=0.0)
+    win_rate_pct = Column(Float, default=0.0)
+    trades_count = Column(Integer, default=0)
+    sub_scores = Column(JSON, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ReflectionMemoryModel(Base):
+    __tablename__ = "reflection_memory"
+
+    id = Column(Integer, primary_key=True, index=True)
+    reflection_id = Column(String(100), unique=True, index=True, nullable=False)
+    trade_id = Column(String(100), nullable=True)
+    symbol = Column(String(50), index=True, nullable=False)
+    action = Column(String(10), nullable=False)
+    entry_price = Column(Float, nullable=False)
+    exit_price = Column(Float, nullable=False)
+    realized_pnl = Column(Float, nullable=False)
+    realized_pnl_pct = Column(Float, nullable=False)
+    alpha_vs_nifty = Column(Float, default=0.0)
+    lesson_learned = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+

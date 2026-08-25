@@ -42,6 +42,8 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       items: [
         { id: "predictions", label: "AI Predictions", icon: Cpu },
         { id: "agentactivity", label: "Hermes Agent Hub", icon: Users },
+        { id: "skills", label: "Hermes Skills Matrix", icon: Zap },
+        { id: "avatar", label: "Talking Avatar Studio", icon: Flame },
         { id: "tournaments", label: "Strategy Tournaments", icon: Trophy },
         { id: "strategylab", label: "Strategy Lab", icon: FlaskConical },
       ],

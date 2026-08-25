@@ -25,6 +25,8 @@ from apps.api.app.api.endpoints.alerts import router as alerts_router
 from apps.api.app.api.endpoints.portfolio_risk import router as portfolio_risk_router
 from apps.api.app.api.endpoints.tutor import router as tutor_router
 from apps.api.app.api.endpoints.voice import router as voice_router
+from apps.api.app.api.endpoints.skills import router as skills_router
+from apps.api.app.api.endpoints.telegram import router as telegram_router
 from packages.market_data.yahoo_provider import YahooFinanceMarketDataProvider
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
 from packages.market_calendar.calendar import IST_TIMEZONE
@@ -38,13 +40,13 @@ market_provider = YahooFinanceMarketDataProvider()
 
 async def background_market_ticker():
     """Background task to broadcast real-time ticks to connected browser terminals."""
-    symbols = ["NIFTY 50", "BANK NIFTY", "SENSEX", "RELIANCE", "TCS", "HDFCBANK", "INFY", "ICICIBANK", "INDIA VIX"]
+    symbols = ["^NSEI", "^NSEBANK", "^BSESN", "RELIANCE", "TCS", "HDFCBANK", "INFY", "^INDIAVIX"]
     while True:
         try:
             if manager.active_connections:
                 # Pick 2-3 symbols to tick per second
                 for sym in symbols[:4]:
-                    quote = await provider.get_quote(sym)
+                    quote = await market_provider.get_quote(sym)
                     msg = {
                         "event_type": "TICK",
                         "symbol": quote.symbol,
@@ -113,6 +115,8 @@ app.include_router(alerts_router, prefix=settings.API_V1_STR)
 app.include_router(portfolio_risk_router, prefix=settings.API_V1_STR)
 app.include_router(tutor_router, prefix=settings.API_V1_STR)
 app.include_router(voice_router, prefix=settings.API_V1_STR)
+app.include_router(skills_router, prefix=settings.API_V1_STR)
+app.include_router(telegram_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")
