@@ -166,21 +166,25 @@ async def run_hermes_comprehensive_live_trading():
         (strat_mom_v2, bt_mom_v2),
     ]
 
+    from sqlalchemy import select
+
     # Save Strategies and Backtests to DB
     async with async_session_factory() as session:
         for strat, bt in strategies_to_save:
-            strat_model = StrategyModel(
-                strategy_id=strat.strategy_id,
-                name=strat.name,
-                version=strat.version,
-                author_type="AGENT",
-                universe="NIFTY_50",
-                timeframe=strat.timeframe,
-                dsl_definition=json.dumps(strat.model_dump()),
-                status="ACTIVE",
-                created_at=datetime.utcnow(),
-            )
-            session.add(strat_model)
+            existing = await session.scalar(select(StrategyModel).where(StrategyModel.strategy_id == strat.strategy_id))
+            if not existing:
+                strat_model = StrategyModel(
+                    strategy_id=strat.strategy_id,
+                    name=strat.name,
+                    version=strat.version,
+                    author_type="AGENT",
+                    universe="NIFTY_50",
+                    timeframe=strat.timeframe,
+                    dsl_definition=json.dumps(strat.model_dump()),
+                    status="ACTIVE",
+                    created_at=datetime.utcnow(),
+                )
+                session.add(strat_model)
 
             bt_model = BacktestModel(
                 backtest_id=bt["run_id"],
@@ -209,24 +213,27 @@ async def run_hermes_comprehensive_live_trading():
     
     async with async_session_factory() as session:
         for item in tourney_res.get("leaderboard", []):
-            t_model = TournamentLeaderboardModel(
-                strategy_id=item["strategy_id"],
-                name=item["name"],
-                version="1.0",
-                asset="RELIANCE",
-                rank=item["rank"],
-                strategy_score=item["strategy_score"],
-                badge=item["badge"],
-                tier=item["tier"],
-                cagr_pct=item["metrics"]["cagr_pct"],
-                sharpe_ratio=item["metrics"]["sharpe_ratio"],
-                max_drawdown_pct=item["metrics"]["max_drawdown_pct"],
-                win_rate_pct=item["metrics"]["win_rate_pct"],
-                trades_count=item["trades_count"],
-                sub_scores=json.dumps(item["sub_scores"]),
-                updated_at=datetime.utcnow(),
-            )
-            session.add(t_model)
+            existing_lb = await session.scalar(select(TournamentLeaderboardModel).where(TournamentLeaderboardModel.strategy_id == item["strategy_id"]))
+            if not existing_lb:
+                t_model = TournamentLeaderboardModel(
+                    strategy_id=item["strategy_id"],
+                    name=item["name"],
+                    version="1.0",
+                    asset="RELIANCE",
+                    rank=item["rank"],
+                    strategy_score=item["strategy_score"],
+                    badge=item["badge"],
+                    tier=item["tier"],
+                    cagr_pct=item["metrics"]["cagr_pct"],
+                    sharpe_ratio=item["metrics"]["sharpe_ratio"],
+                    max_drawdown_pct=item["metrics"]["max_drawdown_pct"],
+                    win_rate_pct=item["metrics"]["win_rate_pct"],
+                    trades_count=item["trades_count"],
+                    sub_scores=json.dumps(item["sub_scores"]),
+                    updated_at=datetime.utcnow(),
+                )
+                session.add(t_model)
+        await session.commit()
         await session.commit()
     print(f"       [DB OK] Persisted Tournament Leaderboard ({len(tourney_res['leaderboard'])} entries ranked).")
 
@@ -264,18 +271,25 @@ async def run_hermes_comprehensive_live_trading():
     # Persist Paper Account, Positions & Trades to DB
     async with async_session_factory() as session:
         # 1. Paper Account
-        acc_model = PaperAccountModel(
-            account_id=paper_account.account_id,
-            name=paper_account.name,
-            initial_balance=paper_account.initial_capital,
-            current_cash=summary["cash_balance"],
-            portfolio_value=summary["portfolio_value"],
-            realized_pnl=summary["realized_pnl"],
-            unrealized_pnl=summary["unrealized_pnl"],
-            active=True,
-            created_at=datetime.utcnow(),
-        )
-        session.add(acc_model)
+        existing_acc = await session.scalar(select(PaperAccountModel).where(PaperAccountModel.account_id == paper_account.account_id))
+        if existing_acc:
+            existing_acc.current_cash = summary["cash_balance"]
+            existing_acc.portfolio_value = summary["total_portfolio_value"]
+            existing_acc.realized_pnl = summary["realized_pnl"]
+            existing_acc.unrealized_pnl = summary["unrealized_pnl"]
+        else:
+            acc_model = PaperAccountModel(
+                account_id=paper_account.account_id,
+                name=paper_account.name,
+                initial_balance=paper_account.initial_capital,
+                current_cash=summary["cash_balance"],
+                portfolio_value=summary["total_portfolio_value"],
+                realized_pnl=summary["realized_pnl"],
+                unrealized_pnl=summary["unrealized_pnl"],
+                active=True,
+                created_at=datetime.utcnow(),
+            )
+            session.add(acc_model)
 
         # 2. Paper Trades
         for trade in paper_account.trade_history:
