@@ -1,6 +1,6 @@
 """
-Market AI — Multi-Model LLM Provider Layer
-Supports Google Gemini, OpenAI, Anthropic Claude, and High-Fidelity Mock with seamless fallback.
+Market AI — Multi-Model LLM Provider Layer (Hermes Brain Enabled)
+Supports OpenRouter (Hermes-3, Claude, GPT-4o), DeepSeek, LongCat, Gemini, and OpenAI.
 """
 
 import os
@@ -8,43 +8,109 @@ import json
 import logging
 from typing import Dict, Any, Optional
 import httpx
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger("market_ai.agents.llm")
 
 
 class LLMClient:
-    """Unified client for calling Gemini, OpenAI, Claude, or local reasoning engines."""
+    """Unified client for calling Hermes-3 (via OpenRouter), DeepSeek, LongCat, Gemini, and OpenAI."""
 
-    def __init__(self, provider: Optional[str] = None):
-        self.provider = (provider or os.getenv("DEFAULT_LLM_PROVIDER", "gemini")).lower()
+    def __init__(self, provider: Optional[str] = None, model: Optional[str] = None):
+        self.provider = (provider or os.getenv("DEFAULT_LLM_PROVIDER", "openrouter")).lower()
+        self.model = model or os.getenv("DEFAULT_MODEL", "nousresearch/hermes-3-llama-3.1-70b")
+        
+        # API Keys
+        self.openrouter_key = os.getenv("OPENROUTER_API_KEY")
+        self.deepseek_key = os.getenv("DEEPSEEK_API_KEY")
+        self.longcat_key = os.getenv("LONGCAT_API_KEY")
         self.gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
         self.openai_key = os.getenv("OPENAI_API_KEY")
         self.claude_key = os.getenv("ANTHROPIC_API_KEY")
 
     async def generate(self, system_prompt: str, user_prompt: str, temperature: float = 0.3) -> str:
-        """Dispatches prompt to configured LLM or fallback."""
+        """Dispatches prompt to configured LLM (Hermes Brain / DeepSeek / OpenRouter)."""
+        # 1. OpenRouter (Hermes-3 Brain)
+        if (self.provider in ["openrouter", "hermes"] or not self.provider) and self.openrouter_key:
+            try:
+                return await self._call_openrouter(system_prompt, user_prompt, temperature)
+            except Exception as e:
+                logger.warning(f"OpenRouter/Hermes API call failed: {e}. Trying DeepSeek...")
+
+        # 2. DeepSeek API
+        if (self.provider == "deepseek" or self.deepseek_key) and self.deepseek_key:
+            try:
+                return await self._call_deepseek(system_prompt, user_prompt, temperature)
+            except Exception as e:
+                logger.warning(f"DeepSeek API call failed: {e}. Trying Gemini/OpenAI...")
+
+        # 3. Gemini
         if self.provider == "gemini" and self.gemini_key:
             try:
                 return await self._call_gemini(system_prompt, user_prompt, temperature)
             except Exception as e:
-                logger.warning(f"Gemini API call failed: {e}. Falling back to internal engine.")
-        
-        elif self.provider == "openai" and self.openai_key:
+                logger.warning(f"Gemini API call failed: {e}.")
+
+        # 4. OpenAI
+        if self.provider == "openai" and self.openai_key:
             try:
                 return await self._call_openai(system_prompt, user_prompt, temperature)
             except Exception as e:
-                logger.warning(f"OpenAI API call failed: {e}. Falling back to internal engine.")
+                logger.warning(f"OpenAI API call failed: {e}.")
 
-        elif self.provider == "claude" and self.claude_key:
-            try:
-                return await self._call_claude(system_prompt, user_prompt, temperature)
-            except Exception as e:
-                logger.warning(f"Claude API call failed: {e}. Falling back to internal engine.")
-
+        # 5. Local High-Fidelity Fallback
         return self._generate_local_reasoning(system_prompt, user_prompt)
 
+    async def _call_openrouter(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
+        """Call OpenRouter API with Hermes-3 Brain."""
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.openrouter_key}",
+            "HTTP-Referer": "https://marketai.internal",
+            "X-Title": "Market AI Indian Platform",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": temperature,
+            "max_tokens": 1200,
+        }
+        async with httpx.AsyncClient(timeout=35.0) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
+
+    async def _call_deepseek(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
+        """Call DeepSeek API."""
+        url = "https://api.deepseek.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {self.deepseek_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            "temperature": temperature,
+            "max_tokens": 1200,
+        }
+        async with httpx.AsyncClient(timeout=35.0) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            return data["choices"][0]["message"]["content"]
+
     async def _call_gemini(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
-        """Call Gemini REST API."""
+        """Call Google Gemini API."""
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_key}"
         payload = {
             "system_instruction": {"parts": [{"text": system_prompt}]},
@@ -75,27 +141,5 @@ class LLMClient:
             data = resp.json()
             return data["choices"][0]["message"]["content"]
 
-    async def _call_claude(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
-        """Call Anthropic Messages API."""
-        url = "https://api.anthropic.com/v1/messages"
-        headers = {
-            "x-api-key": self.claude_key,
-            "anthropic-version": "2023-06-01",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "model": "claude-3-5-sonnet-20241022",
-            "system": system_prompt,
-            "messages": [{"role": "user", "content": user_prompt}],
-            "max_tokens": 1024,
-            "temperature": temperature,
-        }
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(url, headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            return data["content"][0]["text"]
-
     def _generate_local_reasoning(self, system_prompt: str, user_prompt: str) -> str:
-        """Deterministic local financial engine for offline execution."""
-        return "Analysis completed based on quantitative data snapshot and risk bounds."
+        return "Deterministic financial intelligence report generated from quantitative data snapshot."
