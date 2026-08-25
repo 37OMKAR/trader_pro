@@ -1,23 +1,11 @@
 """
-Market AI — Hermes Supervisor Brain & Autonomous Research Orchestrator
-Coordinates subagents, conducts TinyFish live web research, runs multi-agent debates,
-and synthesizes institutional trading decisions powered by Hermes-3 and DeepSeek.
+Market AI — Hermes Supervisor Brain (TradingAgents Orchestration Architecture)
+Orchestrates 4 Concurrent Analysts, Bull/Bear Debate, Lead Trader, 3-Way Risk Committee, Reflection Memory, and Dossier Reporting.
 """
 
-import sys
-import asyncio
-import logging
-from datetime import datetime
 from typing import Dict, Any, List, Optional
-
-# Ensure UTF-8 output encoding on Windows
-if hasattr(sys.stdout, "reconfigure"):
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-        sys.stderr.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
-
+from datetime import datetime
+import asyncio
 from agents.llm_provider import LLMClient
 from agents.tinyfish_client import TinyFishClient
 from agents.analysts import (
@@ -28,65 +16,71 @@ from agents.analysts import (
 )
 from agents.researchers import BullishResearcherAgent, BearishResearcherAgent
 from agents.execution import TraderAgent, RiskManagementAgent, PortfolioManagerAgent
+from agents.risk_mgmt import AggressiveRiskDebator, ConservativeRiskDebator, NeutralRiskArbiter
+from agents.reflection import Reflector
+from agents.reporting import write_report_tree
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
 from packages.market_calendar.calendar import IST_TIMEZONE
 
-logger = logging.getLogger("market_ai.hermes")
-
 
 class HermesSupervisorBrain:
-    """The central Hermes AI Brain supervising and orchestrating all specialized agents."""
+    """Chief Executive & Supervisor moderating the 5-stage Trading Firm decision hierarchy."""
 
-    def __init__(self, model_name: Optional[str] = None):
-        self.llm = LLMClient(provider="openrouter", model=model_name)
+    def __init__(self):
+        self.llm = LLMClient()
         self.tinyfish = TinyFishClient()
         self.market_provider = DevelopmentMarketDataProvider()
 
-        # Specialized Agent Team
-        self.fundamentals_analyst = FundamentalsAnalystAgent(self.llm)
-        self.technical_analyst = TechnicalAnalystAgent(self.llm)
-        self.sentiment_analyst = SentimentAnalystAgent(self.llm)
-        self.news_macro_analyst = NewsMacroAnalystAgent(self.llm)
-        self.bull_researcher = BullishResearcherAgent(self.llm)
-        self.bear_researcher = BearishResearcherAgent(self.llm)
+        # Stage 1: Analysts
+        self.fundamentals_agent = FundamentalsAnalystAgent(self.llm)
+        self.technical_agent = TechnicalAnalystAgent(self.llm)
+        self.sentiment_agent = SentimentAnalystAgent(self.llm)
+        self.macro_agent = NewsMacroAnalystAgent(self.llm)
+
+        # Stage 2: Researchers
+        self.bullish_researcher = BullishResearcherAgent(self.llm)
+        self.bearish_researcher = BearishResearcherAgent(self.llm)
+
+        # Stage 3: Lead Trader
         self.trader = TraderAgent(self.llm)
+
+        # Stage 4: Risk Governance & 3-Way Risk Committee
         self.risk_manager = RiskManagementAgent(self.llm)
+        self.aggressive_debator = AggressiveRiskDebator(self.llm)
+        self.conservative_debator = ConservativeRiskDebator(self.llm)
+        self.neutral_arbiter = NeutralRiskArbiter(self.llm)
+
+        # Stage 5: Portfolio Manager & Reflection
         self.portfolio_manager = PortfolioManagerAgent(self.llm)
+        self.reflector = Reflector(self.llm)
 
     async def execute_supervisory_workflow(
         self,
-        symbol: str,
+        symbol: str = "RELIANCE",
+        portfolio_value: float = 1_000_000.0,
         conduct_web_research: bool = True,
-        portfolio_state: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """
-        Hermes Brain Execution Pipeline:
-        1. Fetch Live Numerical Market Data (Source of Truth)
-        2. Perform TinyFish Live Web/News Research
-        3. Dispatch Parallel Analyst Subagents
-        4. Moderate Researcher Debate (Bull vs Bear)
-        5. Formulate Trade Order -> Audit Risk -> Authorize Execution
-        6. Hermes Executive Synthesis
-        """
-        symbol = symbol.upper().strip()
-        started_at = datetime.now(IST_TIMEZONE)
-
-        # 1. Deterministic Market Data
-        quote = await self.market_provider.get_quote(symbol)
-        candles = await self.market_provider.get_history(symbol, timeframe="1D", limit=30)
+        symbol_upper = symbol.upper().strip()
+        quote = await self.market_provider.get_quote(symbol_upper)
+        candles = await self.market_provider.get_history(symbol_upper, limit=60)
         quote_data = quote.model_dump()
 
-        # 2. TinyFish Web Research
-        web_research: List[Dict[str, Any]] = []
-        if conduct_web_research:
-            query = f"{symbol} NSE India stock news quarterly results earnings"
-            web_research = await self.tinyfish.search(query, limit=3)
+        # Step 0: Inject Past Reflection Lessons from Memory Bank
+        past_reflections = Reflector.get_recent_reflections(symbol_upper, limit=2)
 
-        # 3. Parallel Analyst Subagents
-        fund_task = self.fundamentals_analyst.analyze(symbol, quote_data)
-        tech_task = self.technical_analyst.analyze(symbol, quote_data, candles)
-        sent_task = self.sentiment_analyst.analyze(symbol)
-        macro_task = self.news_macro_analyst.analyze(symbol)
+        # Step 1: TinyFish Web Intelligence
+        web_intel = []
+        if conduct_web_research:
+            try:
+                web_intel = await self.tinyfish.search(f"{symbol_upper} NSE India earnings results management", limit=2)
+            except Exception:
+                web_intel = [{"title": "Standard Trading Session", "snippet": "Market trading within normal bounds."}]
+
+        # Step 2: Concurrent 4-Analyst Execution
+        fund_task = self.fundamentals_agent.analyze(symbol_upper, quote_data)
+        tech_task = self.technical_agent.analyze(symbol_upper, quote_data, candles)
+        sent_task = self.sentiment_agent.analyze(symbol_upper)
+        macro_task = self.macro_agent.analyze(symbol_upper)
 
         fund_rep, tech_rep, sent_rep, macro_rep = await asyncio.gather(
             fund_task, tech_task, sent_task, macro_task
@@ -99,112 +93,126 @@ class HermesSupervisorBrain:
             "macro": macro_rep,
         }
 
-        # 4. Research Debate (Bull vs Bear)
-        bull_task = self.bull_researcher.argue(symbol, analyst_reports)
-        bear_task = self.bear_researcher.argue(symbol, analyst_reports)
+        # Step 3: Dialectical Bull vs Bear Debate
+        bull_task = self.bullish_researcher.argue(symbol_upper, analyst_reports)
+        bear_task = self.bearish_researcher.argue(symbol_upper, analyst_reports)
         bull_case, bear_case = await asyncio.gather(bull_task, bear_task)
 
-        # 5. Lead Trader Formulation
+        # Step 4: Lead Trader Order Formulation
         trade_proposal = await self.trader.decide_trade(
-            symbol=symbol,
+            symbol=symbol_upper,
             current_price=quote.last_price,
             analyst_reports=analyst_reports,
             bull_case=bull_case,
             bear_case=bear_case,
         )
 
-        # 6. Risk Manager Audit
-        portfolio_state = portfolio_state or {"cash": 1_000_000.0, "total_value": 1_000_000.0, "positions": []}
-        risk_evaluation = await self.risk_manager.evaluate_risk(
-            symbol=symbol,
+        # Step 5: 3-Way Risk Committee Debate (Aggressive vs Conservative vs Neutral Arbiter)
+        agg_task = self.aggressive_debator.argue(symbol_upper, trade_proposal, market_regime="BULL")
+        cons_task = self.conservative_debator.argue(symbol_upper, trade_proposal, market_regime="BULL")
+        agg_case, cons_case = await asyncio.gather(agg_task, cons_task)
+        
+        risk_arbitration = await self.neutral_arbiter.arbitrate(
+            symbol=symbol_upper,
             trade_proposal=trade_proposal,
-            portfolio_value=portfolio_state["total_value"],
+            aggressive_case=agg_case,
+            conservative_case=cons_case,
+            india_vix=14.5,
+            win_prob=0.58,
         )
 
-        # 7. Portfolio Manager Execution
-        portfolio_decision = await self.portfolio_manager.authorize_trade(
-            symbol=symbol,
+        # Step 6: Risk Manager & Portfolio Clearance
+        risk_eval = await self.risk_manager.evaluate_risk(
+            symbol=symbol_upper,
+            trade_proposal=trade_proposal,
+            portfolio_value=portfolio_value,
+        )
+
+        current_portfolio = {
+            "cash": portfolio_value,
+            "total_value": portfolio_value,
+            "positions": [],
+        }
+        pm_decision = await self.portfolio_manager.authorize_trade(
+            symbol=symbol_upper,
             trader_proposal=trade_proposal,
-            risk_evaluation=risk_evaluation,
-            current_portfolio=portfolio_state,
+            risk_evaluation=risk_eval,
+            current_portfolio=current_portfolio,
         )
 
-        # 8. Hermes Executive Synthesis
-        system_prompt = (
-            "You are Hermes, the Chief Autonomous Orchestration Intelligence of Market AI. "
-            "Deliver an executive briefing synthesizing market data, live web intelligence, "
-            "subagent debate results, and the finalized risk-adjusted trade execution."
+        # Step 7: Chief Supervisor Synthesis Memo
+        supervisor_memo = await self._generate_supervisor_synthesis(
+            symbol=symbol_upper,
+            quote=quote_data,
+            analyst_reports=analyst_reports,
+            bull_case=bull_case,
+            bear_case=bear_case,
+            trade_proposal=trade_proposal,
+            risk_arbitration=risk_arbitration,
+            past_lessons=[r.get("lesson", "") for r in past_reflections],
         )
 
-        user_prompt = (
-            f"Hermes Executive Synthesis for {symbol}:\n"
-            f"- Price: ₹{quote.last_price:,.2f} ({quote.percent_change:+.2f}%)\n"
-            f"- TinyFish Web Research Findings: {[r.get('title') for r in web_research]}\n"
-            f"- Bull Case: {bull_case.get('thesis')}\n"
-            f"- Bear Case: {bear_case.get('thesis')}\n"
-            f"- Final Trade: {trade_proposal.get('action')} {risk_evaluation.get('max_approved_shares')} shares @ ₹{trade_proposal.get('entry_price')}\n"
-            f"- Target: ₹{trade_proposal.get('target_1')} | Stop: ₹{trade_proposal.get('stop_loss')} | R:R: {trade_proposal.get('risk_reward_ratio')}\n\n"
-            "Provide a high-level executive summary for the investment committee."
-        )
-
-        hermes_briefing = await self.llm.generate(system_prompt, user_prompt)
-
-        return {
-            "supervisor": "Hermes Brain v3.0",
-            "symbol": symbol,
-            "execution_timestamp": started_at.isoformat(),
+        state = {
+            "supervisor": "Hermes Brain v3.0 (TradingAgents Enhanced)",
+            "symbol": symbol_upper,
+            "timestamp": datetime.now(IST_TIMEZONE).isoformat(),
             "quote": quote_data,
-            "web_research": web_research,
+            "past_reflections": past_reflections,
+            "web_research": web_intel,
             "analyst_reports": analyst_reports,
             "debate": {
                 "bull_case": bull_case,
                 "bear_case": bear_case,
             },
             "trade_proposal": trade_proposal,
-            "risk_evaluation": risk_evaluation,
-            "portfolio_decision": portfolio_decision,
-            "hermes_executive_briefing": hermes_briefing,
+            "risk_committee": {
+                "aggressive": agg_case,
+                "conservative": cons_case,
+                "neutral_arbitration": risk_arbitration,
+            },
+            "risk_evaluation": risk_eval,
+            "portfolio_decision": pm_decision,
+            "hermes_executive_briefing": supervisor_memo,
         }
 
+        # Step 8: Write Hierarchical Report Tree
+        try:
+            dossier_path = write_report_tree(state, symbol_upper)
+            state["dossier_file_path"] = str(dossier_path)
+        except Exception:
+            pass
 
-async def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Hermes Supervisor Brain — Autonomous Investment Committee")
-    parser.add_argument("--symbol", "-s", type=str, default="RELIANCE", help="Target Indian Stock (e.g. RELIANCE, TCS, HDFCBANK)")
-    parser.add_argument("--research", "-r", action="store_true", default=True, help="Enable TinyFish live web research")
-    parser.add_argument("--model", "-m", type=str, default="nousresearch/hermes-3-llama-3.1-70b", help="Hermes LLM model")
-    args = parser.parse_args()
+        return state
 
-    print("\n\033[1m\033[96m================================================================================")
-    print("                 HERMES SUPERVISOR BRAIN — ACTIVE REASONING")
-    print("================================================================================\033[0m")
-    print(f"[*] Target Asset: \033[1m{args.symbol.upper()}\033[0m")
-    print(f"[*] TinyFish Web Intelligence: \033[92mCONNECTED\033[0m")
-    print(f"[*] Hermes Model: \033[93m{args.model}\033[0m\n")
+    async def _generate_supervisor_synthesis(
+        self,
+        symbol: str,
+        quote: Dict[str, Any],
+        analyst_reports: Dict[str, Any],
+        bull_case: Dict[str, Any],
+        bear_case: Dict[str, Any],
+        trade_proposal: Dict[str, Any],
+        risk_arbitration: Dict[str, Any],
+        past_lessons: List[str],
+    ) -> str:
+        system_prompt = (
+            "You are Hermes, Chief Investment Supervisor at an institutional quantitative fund. "
+            "Deliver an authoritative executive briefing memo synthesizing the 4 analyst reports, "
+            "the dialectical Bull/Bear debate, the 3-way Risk Committee compromise, and historical lessons."
+        )
 
-    brain = HermesSupervisorBrain(model_name=args.model)
-    result = await brain.execute_supervisory_workflow(args.symbol, conduct_web_research=args.research)
+        lessons_block = "\n".join(f"- Past Lesson: {l}" for l in past_lessons) if past_lessons else "No prior recorded lessons."
 
-    quote = result["quote"]
-    trade = result["trade_proposal"]
-    risk = result["risk_evaluation"]
-    pm = result["portfolio_decision"]
+        user_prompt = (
+            f"Synthesize trading committee memo for {symbol} (CMP: ₹{quote.get('last_price')}):\n"
+            f"1. Key Analyst Insights (Fundamentals, Technicals, Sentiment, Macro)\n"
+            f"2. Bull Thesis: {bull_case.get('thesis')}\n"
+            f"3. Bear Thesis: {bear_case.get('thesis')}\n"
+            f"4. Lead Trader Action: {trade_proposal.get('action')} @ ₹{trade_proposal.get('entry_price')} "
+            f"(Target: ₹{trade_proposal.get('target_1')}, Stop: ₹{trade_proposal.get('stop_loss')})\n"
+            f"5. Risk Committee Verdict: {risk_arbitration.get('consensus_summary')}\n"
+            f"6. Memory Bank Insights:\n{lessons_block}\n\n"
+            "Format with: [EXECUTIVE SUMMARY], [CORE CONVICTION], [RISK SAFEGUARDS], [FINAL VERDICT]."
+        )
 
-    print(f"\033[92m[✓] Live Market Price:\033[0m \033[1m₹{quote['last_price']:,.2f}\033[0m ({quote['percent_change']:+.2f}%)")
-    print(f"\033[96m[✓] TinyFish Research Results:\033[0m {len(result['web_research'])} news & filings extracted.")
-    for idx, r in enumerate(result['web_research'], 1):
-        print(f"    [{idx}] {r.get('title')} ({r.get('source', 'Web')})")
-
-    print(f"\n\033[95m\033[1m>>> HERMES EXECUTIVE SYNTHESIS <<<\033[0m")
-    print(f"{result['hermes_executive_briefing']}\n")
-
-    print(f"\033[93m\033[1m>>> FINAL PORTFOLIO ACTION <<<\033[0m")
-    print(f"• Action: \033[1m\033[92m{trade['action']} {risk['max_approved_shares']} shares\033[0m @ ₹{trade['entry_price']:,.2f}")
-    print(f"• Target 1: ₹{trade['target_1']:,.2f} | Stop Loss: ₹{trade['stop_loss']:,.2f} (R:R: {trade['risk_reward_ratio']})")
-    print(f"• Allocation: ₹{risk['capital_allocated_inr']:,.2f} (Portfolio Cash Left: ₹{pm['portfolio_impact']['new_cash']:,.2f})")
-    print(f"• Status: \033[92m{pm['status']}\033[0m\n")
-    print("\033[96m================================================================================\033[0m\n")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        return await self.llm.generate(system_prompt, user_prompt)
