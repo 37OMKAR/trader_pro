@@ -14,6 +14,8 @@ from apps.api.app.core.config import settings
 from apps.api.app.core.event_bus import manager
 from apps.api.app.db.session import init_db
 from apps.api.app.api.endpoints.market import router as market_router
+from apps.api.app.api.endpoints.derivatives import router as derivatives_router
+from apps.api.app.api.endpoints.strategies import router as strategies_router
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
 from packages.market_calendar.calendar import IST_TIMEZONE
 
@@ -89,6 +91,8 @@ app.add_middleware(
 
 # Include Routers
 app.include_router(market_router, prefix=settings.API_V1_STR)
+app.include_router(derivatives_router, prefix=settings.API_V1_STR)
+app.include_router(strategies_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

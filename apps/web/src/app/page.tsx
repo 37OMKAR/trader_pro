@@ -12,6 +12,8 @@ import { MarketRegimeBadge } from "@/components/MarketRegimeBadge";
 import { TopMoversTable } from "@/components/TopMoversTable";
 import { StockDetailModal } from "@/components/StockDetailModal";
 import { AIPredictionsView } from "@/components/AIPredictionsView";
+import { DerivativesView } from "@/components/DerivativesView";
+import { StrategyLabView } from "@/components/StrategyLabView";
 import { MarketAPI } from "@/lib/api";
 import {
   MarketStatusResponse,
@@ -186,14 +188,23 @@ export default function Home() {
 
         {/* Scrollable Dashboard Body */}
         <main className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* TAB: F&O Derivatives */}
+          {activeTab === "derivatives" && <DerivativesView />}
+
+          {/* TAB: Strategy Lab & Backtest */}
+          {activeTab === "strategylab" && <StrategyLabView />}
+
           {/* TAB: AI Predictions View */}
-          {activeTab === "predictions" ? (
+          {activeTab === "predictions" && (
             <AIPredictionsView
               onSelectStock={(sym) => {
                 setModalStock(sym);
               }}
             />
-          ) : (
+          )}
+
+          {/* TAB: Overview */}
+          {activeTab === "overview" && (
             <>
               {/* 1. Benchmark Index Cards */}
               <IndexSummaryCards
