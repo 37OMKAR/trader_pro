@@ -1,0 +1,31 @@
+{
+  "name": "market-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Indian Market Autonomous Research, Prediction & Paper-Trading Platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build:web": "npm run build --workspace=apps/web",
+    "start:web": "npm run start --workspace=apps/web",
+    "lint:web": "npm run lint --workspace=apps/web",
+    "dev:api": "python -m uvicorn apps.api.app.main:app --reload --port 8000 --host 127.0.0.1",
+    "test:py": "python -m pytest",
+    "test": "npm run test:py && npm run lint:web"
+  },
+  "keywords": [
+    "market-ai",
+    "nse",
+    "bse",
+    "nifty50",
+    "sensex",
+    "algorithmic-trading",
+    "paper-trading",
+    "quantitative-finance"
+  ],
+  "author": "Market AI Team",
+  "license": "MIT"
+}
