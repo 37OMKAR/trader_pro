@@ -3,7 +3,7 @@ Market AI — Immutable Prediction Registry
 Persists model predictions to database and provides historical validation & hit-rate audit.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from sqlalchemy import select, desc
 from apps.api.app.db.models import PredictionModel
@@ -29,7 +29,7 @@ class PredictionRegistry:
                 confidence=pred_data["confidence"],
                 risk_score=pred_data["risk_score"],
                 market_regime=pred_data.get("market_regime", "BULL"),
-                generated_at=datetime.utcnow(),
+                generated_at=datetime.now(timezone.utc),
             )
             session.add(record)
             await session.commit()
