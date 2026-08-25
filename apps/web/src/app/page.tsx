@@ -17,6 +17,7 @@ import { StrategyLabView } from "@/components/StrategyLabView";
 import { PaperTradingView } from "@/components/PaperTradingView";
 import { TournamentsView } from "@/components/TournamentsView";
 import { AgentActivityView } from "@/components/AgentActivityView";
+import { ResearchIntelligenceView } from "@/components/ResearchIntelligenceView";
 import { AlertsView } from "@/components/AlertsView";
 import { PortfolioRiskView } from "@/components/PortfolioRiskView";
 import { MarketTutorView } from "@/components/MarketTutorView";
@@ -212,6 +213,9 @@ export default function Home() {
 
           {/* TAB: Hermes Supervisor Agent Hub */}
           {activeTab === "agentactivity" && <AgentActivityView />}
+
+          {/* TAB: Web Research & Filings (TinyFish) */}
+          {activeTab === "research" && <ResearchIntelligenceView />}
 
           {/* TAB: Hermes Skills Matrix */}
           {activeTab === "skills" && <HermesSkillsView />}

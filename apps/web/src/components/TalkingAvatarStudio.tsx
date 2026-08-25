@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Sparkles, 
   Play, 
   Pause, 
   Volume2, 
+  VolumeX,
   Video, 
   Upload, 
   Mic, 
@@ -13,19 +14,77 @@ import {
   CheckCircle2, 
   FileText,
   UserCheck,
-  RefreshCw
+  RefreshCw,
+  Sliders,
+  Send,
+  Zap
 } from "lucide-react";
 
 export function TalkingAvatarStudio() {
   const [scriptText, setScriptText] = useState(
-    "Good morning Dalal Street! NIFTY 50 opens flat with a bullish bias near 24,500. Reliance and HDFC Bank show strong institutional accumulation with PCR OI at 1.18. Hermes Risk Committee recommends a 12% allocation into large-cap momentum breakouts with tight 2 ATR trailing stops."
+    "Good morning Dalal Street! NIFTY 50 opens with strong institutional accumulation near 24,500. Reliance Industries and HDFC Bank show bullish momentum with PCR OI at 1.18. Hermes 3-Way Risk Committee recommends a 12% allocation into large-cap momentum breakouts with strict 2 ATR trailing stops."
   );
   const [selectedVoice, setSelectedVoice] = useState("en-IN-PrabhatNeural");
-  const [avatarPreset, setAvatarPreset] = useState("ANCHOR_ANANYA");
+  const [avatarPreset, setAvatarPreset] = useState("ANCHOR_PRIYA");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(12);
   const [generatedResult, setGeneratedResult] = useState<any>(null);
   const [videoGenerated, setVideoGenerated] = useState(false);
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const animationIntervalRef = useRef<any>(null);
+
+  // Browser Speech Synthesis
+  const speakWithBrowserSpeech = (text: string) => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      
+      const voices = window.speechSynthesis.getVoices();
+      const indianVoice = voices.find(v => v.lang.includes("IN") || v.name.includes("India") || v.name.includes("Hindi"));
+      if (indianVoice) utterance.voice = indianVoice;
+
+      utterance.onstart = () => {
+        setIsPlaying(true);
+        startWaveformAnimation();
+      };
+      utterance.onend = () => {
+        setIsPlaying(false);
+        stopWaveformAnimation();
+      };
+      utterance.onerror = () => {
+        setIsPlaying(false);
+        stopWaveformAnimation();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const startWaveformAnimation = () => {
+    let elapsed = 0;
+    const totalEst = Math.max(8, Math.round(scriptText.split(" ").length / 2.8));
+    setAudioDuration(totalEst);
+    
+    if (animationIntervalRef.current) clearInterval(animationIntervalRef.current);
+    animationIntervalRef.current = setInterval(() => {
+      elapsed += 0.2;
+      setAudioProgress(Math.min(100, (elapsed / totalEst) * 100));
+      if (elapsed >= totalEst) {
+        stopWaveformAnimation();
+        setIsPlaying(false);
+      }
+    }, 200);
+  };
+
+  const stopWaveformAnimation = () => {
+    if (animationIntervalRef.current) clearInterval(animationIntervalRef.current);
+    setAudioProgress(0);
+  };
 
   const handleSynthesizeAudio = async () => {
     setIsGenerating(true);
@@ -37,274 +96,285 @@ export function TalkingAvatarStudio() {
       });
       const data = await res.json();
       setGeneratedResult(data);
-    } catch (e) {
-      console.error(e);
-      setGeneratedResult({
-        status: "SUCCESS",
-        engine: "Kokoro TTS (Local Fallback)",
-        duration_est_sec: 14.5,
-        filename: "briefing_live_demo.mp3",
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
-  const handleGenerateAvatarVideo = async () => {
-    setIsGenerating(true);
-    try {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/voice/generate-avatar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image_path: "assets/presenter.png", script_text: scriptText }),
-      });
-      const data = await res.json();
-      setVideoGenerated(true);
-      setGeneratedResult(data);
+      // Speak directly through speakers
+      speakWithBrowserSpeech(scriptText);
     } catch (e) {
       console.error(e);
-      setVideoGenerated(true);
-      setGeneratedResult({
-        status: "SUCCESS",
-        video_path: "artifacts/avatar_videos/avatar_briefing_live.mp4",
-        filename: "avatar_briefing_live.mp4",
-        generated_at: new Date().toISOString(),
-      });
+      speakWithBrowserSpeech(scriptText);
     } finally {
       setIsGenerating(false);
     }
   };
 
   const togglePlayback = () => {
-    setIsPlaying(!isPlaying);
+    if (isPlaying) {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      setIsPlaying(false);
+      stopWaveformAnimation();
+    } else {
+      speakWithBrowserSpeech(scriptText);
+    }
   };
+
+  const setPresetScript = (type: string) => {
+    switch (type) {
+      case "MORNING_BELL":
+        setScriptText(
+          "Dalal Street Opening Wrap: NIFTY 50 opens firm at 24,520 with positive global cues. FIIs turned net buyers with ₹840 Cr index futures accumulation. Focus on Banking and IT breakouts with 2 ATR trailing stops."
+        );
+        break;
+      case "HERMES_TRADE":
+        setScriptText(
+          "Hermes Executive Alert: 4 Analysts and Dialectical Debate team have approved a high-conviction BUY on Reliance Industries at ₹2,969. Neutral Half-Kelly Arbiter assigns 12% capital allocation with stop loss at ₹2,865."
+        );
+        break;
+      case "RISK_WARNING":
+        setScriptText(
+          "SEBI Risk & Volatility Advisory: India VIX expanded to 15.2 ahead of monthly expiry. Automated risk governors have scaled position sizing to 0.5x. Trailing stop losses tightened across all active F&O derivatives positions."
+        );
+        break;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+      stopWaveformAnimation();
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-purple-950/60 via-indigo-900/40 to-slate-900/80 border border-purple-800/40 rounded-xl p-6 relative overflow-hidden backdrop-blur-md">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 text-purple-400 font-mono text-xs uppercase tracking-widest mb-1">
+      <div className="bg-gradient-to-r from-purple-950/70 via-[#0a0f1d]/90 to-indigo-950/70 border border-purple-500/30 rounded-2xl p-6 relative overflow-hidden backdrop-blur-xl shadow-2xl">
+        <div className="absolute -right-10 -top-10 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-purple-400 font-mono text-xs uppercase tracking-widest">
               <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-              Kokoro Neural TTS & Talking Avatar Video Studio
+              <span>Kokoro Neural Speech Synthesis & Live Talking Anchor Stage</span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-              Dalal Street AI Avatar Presenter
+            <h1 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
+              <span>Dalal Street AI Talking Avatar Studio</span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-mono border border-purple-500/40">
+                LIVE NEURAL TTS
+              </span>
             </h1>
-            <p className="text-slate-400 text-sm mt-1 max-w-2xl">
-              Synthesize natural Indian English morning audio briefings and generate full lip-synced talking avatar videos for executive trading memos and daily market opening wraps.
+            <p className="text-slate-300 text-sm max-w-3xl leading-relaxed">
+              Synthesize natural Indian English morning audio market briefs and generate animated talking presenter briefings for executive trading memos and daily Dalal Street opening wraps.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={handleSynthesizeAudio}
-              disabled={isGenerating}
-              className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg text-sm font-semibold flex items-center gap-2 shadow-lg shadow-purple-600/30 transition"
+              onClick={togglePlayback}
+              className={`px-5 py-3 rounded-xl font-bold font-mono text-xs flex items-center gap-2.5 shadow-lg transition ${
+                isPlaying
+                  ? "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-600/30 ring-1 ring-rose-400 animate-pulse"
+                  : "bg-purple-600 hover:bg-purple-500 text-white shadow-purple-600/30 ring-1 ring-purple-400"
+              }`}
             >
-              {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Mic className="w-4 h-4" />}
-              Synthesize Voice
-            </button>
-            <button
-              onClick={handleGenerateAvatarVideo}
-              disabled={isGenerating}
-              className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white rounded-lg text-sm font-semibold flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition"
-            >
-              {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
-              Render Avatar Video
+              {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+              <span>{isPlaying ? "Stop Speaking" : "Play Live Briefing"}</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Avatar Stage & Script Controls */}
+      {/* Main Grid: Avatar Presenter Stage & Teleprompter Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Col: Avatar Interactive Stage */}
-        <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-xl p-6 flex flex-col justify-between relative overflow-hidden">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Radio className="w-3.5 h-3.5 text-emerald-400 animate-ping" />
-                Live Presenter Stage
-              </span>
-              <span className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded font-mono">
-                {avatarPreset}
-              </span>
-            </div>
+        {/* Left Col: Live Speaking Avatar Presenter Visualizer */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="terminal-card p-6 flex flex-col items-center justify-center relative overflow-hidden bg-gradient-to-b from-[#0e1322] to-[#080c16] border-purple-500/40 shadow-2xl">
+            {/* Live Presenter Stage */}
+            <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-full p-2 bg-gradient-to-b from-purple-500/40 via-cyan-500/20 to-transparent flex items-center justify-center my-4">
+              {/* Outer Pulsing Rings */}
+              {isPlaying && (
+                <>
+                  <div className="absolute inset-0 rounded-full border-2 border-purple-400/60 animate-ping" />
+                  <div className="absolute -inset-3 rounded-full border border-cyan-400/40 animate-pulse" />
+                </>
+              )}
 
-            {/* Avatar Display Box with Speaking Animation */}
-            <div className="relative aspect-[4/3] rounded-xl bg-gradient-to-b from-slate-800 to-slate-950 border border-slate-700/60 overflow-hidden flex items-center justify-center group shadow-2xl">
-              {/* Presenter Portrait */}
-              <div className={`relative transition-transform duration-300 ${isPlaying ? "scale-105" : "scale-100"}`}>
-                <div className="w-40 h-40 rounded-full bg-gradient-to-tr from-purple-600/30 via-indigo-500/20 to-emerald-500/30 p-1 shadow-inner">
-                  <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center overflow-hidden border-2 border-purple-500/40 relative">
-                    {/* Animated Glow Aura when speaking */}
-                    {isPlaying && (
-                      <div className="absolute inset-0 bg-purple-500/20 animate-pulse rounded-full" />
-                    )}
-                    <UserCheck className={`w-20 h-20 text-purple-300 transition-all ${isPlaying ? "animate-bounce" : ""}`} />
+              {/* Avatar Face Container */}
+              <div className="w-full h-full rounded-full bg-slate-900 overflow-hidden border-2 border-purple-400 flex flex-col items-center justify-center relative shadow-inner">
+                {/* Presenter Portrait */}
+                <div className="text-5xl select-none mb-1">👩‍💼</div>
+                <div className="font-mono text-xs font-bold text-white tracking-wide">ANANYA SHARMA</div>
+                <div className="text-[10px] font-mono text-purple-400">Chief Market Anchor</div>
+
+                {/* Animated Speaking Waveform at Mouth Area */}
+                {isPlaying ? (
+                  <div className="flex items-center gap-1 mt-2 px-3 py-1 bg-purple-950/80 rounded-full border border-purple-500/50">
+                    <span className="w-1 h-3 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1 h-5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1 h-2 bg-emerald-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                    <span className="w-1 h-4 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: "100ms" }} />
+                    <span className="w-1 h-3 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "250ms" }} />
                   </div>
-                </div>
-
-                {/* Animated Speech Waveform Rings */}
-                {isPlaying && (
-                  <div className="absolute -inset-4 border-2 border-purple-400/40 rounded-full animate-ping pointer-events-none" />
+                ) : (
+                  <div className="flex items-center gap-1 mt-2 text-[10px] text-slate-500 font-mono">
+                    <Volume2 className="w-3 h-3 text-slate-600" />
+                    <span>READY TO SPEAK</span>
+                  </div>
                 )}
               </div>
-
-              {/* Lower Overlay Badge */}
-              <div className="absolute bottom-3 left-3 right-3 bg-slate-950/80 backdrop-blur-md border border-slate-700/50 rounded-lg p-2.5 flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-semibold text-white">Ananya Sharma</div>
-                  <div className="text-[10px] text-purple-400 font-mono">Senior Dalal Street Macro Anchor</div>
-                </div>
-                <button
-                  onClick={togglePlayback}
-                  className="p-2 bg-purple-600 hover:bg-purple-500 text-white rounded-full transition shadow-md"
-                >
-                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
-                </button>
-              </div>
             </div>
 
-            {/* Audio Waveform Visualizer Bar */}
-            <div className="mt-4 bg-slate-950/60 border border-slate-800 rounded-lg p-3">
-              <div className="flex items-center justify-between text-xs text-slate-400 mb-2">
-                <span className="flex items-center gap-1.5">
-                  <Volume2 className="w-3.5 h-3.5 text-purple-400" />
-                  Neural Waveform Frequency
+            {/* Speaking Status Pill */}
+            <div className="flex items-center gap-2 font-mono text-xs">
+              <span className={`w-2.5 h-2.5 rounded-full ${isPlaying ? "bg-emerald-400 animate-pulse shadow-glow-green" : "bg-slate-500"}`} />
+              <span className={isPlaying ? "text-emerald-400 font-bold" : "text-slate-400"}>
+                {isPlaying ? "BROADCASTING LIVE VOCAL BRIEFING" : "STUDIO IDLE • READY"}
+              </span>
+            </div>
+
+            {/* Audio Waveform Spectrum Analyzer */}
+            <div className="w-full mt-5 bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
+                <span className="flex items-center gap-1.5 text-purple-400">
+                  <Radio className="w-3.5 h-3.5" />
+                  Neural Audio Stream
                 </span>
-                <span className="font-mono text-[11px] text-emerald-400">
-                  {isPlaying ? "PLAYING 24.0 kHz" : "STANDBY"}
-                </span>
+                <span>{audioDuration}s Duration</span>
               </div>
-              <div className="flex items-center gap-1 h-8 justify-between px-1">
-                {[40, 65, 85, 30, 95, 60, 45, 80, 100, 50, 75, 90, 35, 70, 85, 55, 90, 40, 60, 80].map((h, i) => (
+
+              {/* Dynamic Frequency Bars */}
+              <div className="flex items-end justify-between gap-1 h-10 px-1">
+                {[40, 65, 85, 30, 95, 55, 75, 45, 90, 60, 80, 50, 70, 85, 35, 65, 90, 45, 80, 60].map((h, i) => (
                   <div
                     key={i}
-                    style={{ height: isPlaying ? `${Math.max(15, (h + (i % 3) * 10) % 100)}%` : "20%" }}
-                    className={`flex-1 rounded-full transition-all duration-150 ${
-                      isPlaying ? "bg-gradient-to-t from-purple-600 to-emerald-400" : "bg-slate-800"
+                    className={`w-full rounded-t transition-all duration-150 ${
+                      isPlaying ? "bg-gradient-to-t from-purple-600 to-cyan-400" : "bg-slate-800"
                     }`}
+                    style={{
+                      height: isPlaying ? `${Math.max(15, (h * Math.sin((i + audioProgress) * 0.5) + 50) % 100)}%` : "15%",
+                    }}
                   />
                 ))}
               </div>
-            </div>
-          </div>
 
-          {/* Quick Preset Selector */}
-          <div className="mt-4 pt-4 border-t border-slate-800 grid grid-cols-3 gap-2">
-            {[
-              { id: "ANCHOR_ANANYA", label: "Ananya S.", role: "Macro Anchor" },
-              { id: "QUANT_VIKRAM", label: "Vikram R.", role: "Lead Quant" },
-              { id: "RISK_RAJESH", label: "Rajesh M.", role: "Risk Arbiter" },
-            ].map((preset) => (
-              <button
-                key={preset.id}
-                onClick={() => setAvatarPreset(preset.id)}
-                className={`p-2 rounded-lg border text-left transition text-xs ${
-                  avatarPreset === preset.id
-                    ? "bg-purple-900/30 border-purple-500/50 text-white font-medium"
-                    : "bg-slate-850 border-slate-800 text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                <div className="font-semibold">{preset.label}</div>
-                <div className="text-[10px] text-slate-500">{preset.role}</div>
-              </button>
-            ))}
+              {/* Progress bar */}
+              <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden mt-2">
+                <div className="bg-gradient-to-r from-purple-500 to-cyan-400 h-1.5 rounded-full transition-all duration-200" style={{ width: `${audioProgress}%` }} />
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Col: Script Composer & Synthesis Settings */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Script Editor Card */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <FileText className="w-4 h-4 text-purple-400" />
-                Executive Briefing Teleprompter Script
-              </h3>
-              <span className="text-xs text-slate-400 font-mono">
-                {scriptText.length} characters • ~{Math.round(scriptText.split(" ").length / 2.5)}s duration
-              </span>
-            </div>
-
-            <textarea
-              value={scriptText}
-              onChange={(e) => setScriptText(e.target.value)}
-              rows={6}
-              className="w-full bg-slate-950 border border-slate-700/80 rounded-lg p-3.5 text-sm text-slate-200 focus:outline-none focus:border-purple-500 font-sans leading-relaxed resize-none shadow-inner"
-              placeholder="Enter briefing script for the AI presenter..."
-            />
-
-            {/* Quick Insert Templates */}
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="text-slate-400">Quick Templates:</span>
-              {[
-                { label: "Opening Bell Wrap", text: "Good morning Dalal Street. NIFTY 50 opened at 24,520 with Bank Nifty gaining +180 points. FIIs recorded net inflows of ₹1,420 Cr." },
-                { label: "Hermes Trade Signal", text: "Hermes Chief Supervisor reports high-conviction breakout in RELIANCE at ₹2,500 with Target ₹2,650 and Stop Loss ₹2,420." },
-                { label: "Risk Drawdown Warning", text: "India VIX surged to 16.8. Risk Arbiter has dynamically throttled portfolio exposure to 60% of Kelly sizing to preserve capital." },
-              ].map((tpl, i) => (
+        {/* Right Col: Teleprompter Script Editor & Voice Controls */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="terminal-card p-6 space-y-4 font-mono text-xs">
+            {/* Quick Preset Templates */}
+            <div>
+              <div className="text-slate-400 mb-2 flex items-center gap-1.5 font-bold">
+                <FileText className="w-4 h-4 text-cyan-400" />
+                <span>TELEPROMPTER PRESET SCRIPTS</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  key={i}
-                  onClick={() => setScriptText(tpl.text)}
-                  className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition"
+                  onClick={() => setPresetScript("MORNING_BELL")}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition"
                 >
-                  {tpl.label}
+                  Opening Bell Wrap
                 </button>
-              ))}
+                <button
+                  onClick={() => setPresetScript("HERMES_TRADE")}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition"
+                >
+                  Hermes RIL Trade Alert
+                </button>
+                <button
+                  onClick={() => setPresetScript("RISK_WARNING")}
+                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition"
+                >
+                  SEBI Risk Caution
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Voice & Synthesis Parameters */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-6 space-y-4">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Mic className="w-4 h-4 text-emerald-400" />
-              Neural Voice & Acoustic Profile
-            </h3>
+            {/* Script Textarea */}
+            <div>
+              <label className="text-slate-400 block mb-1.5 font-bold">TELEPROMPTER SCRIPT (EDITABLE)</label>
+              <textarea
+                rows={5}
+                value={scriptText}
+                onChange={(e) => setScriptText(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs text-slate-200 focus:outline-none focus:border-purple-500 font-mono leading-relaxed resize-none"
+                placeholder="Enter script for the AI Avatar to speak..."
+              />
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Voice & Accent Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
               <div>
-                <label className="text-xs font-mono text-slate-400 block mb-1.5">Voice Model (Indian English)</label>
+                <label className="text-slate-400 block mb-1">NEURAL VOICE MODEL</label>
                 <select
                   value={selectedVoice}
                   onChange={(e) => setSelectedVoice(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500 font-mono"
+                  className="w-full bg-slate-900 border border-slate-800 text-xs text-white rounded-lg p-2 font-mono focus:outline-none focus:border-purple-500"
                 >
-                  <option value="en-IN-PrabhatNeural">en-IN-PrabhatNeural (Professional Male)</option>
-                  <option value="en-IN-NeerjaNeural">en-IN-NeerjaNeural (Broadcast Female)</option>
-                  <option value="Kokoro-Indian-Male-HD">Kokoro HD Indian Male (Local Neural)</option>
+                  <option value="en-IN-PrabhatNeural">Ananya (Indian English • Formal)</option>
+                  <option value="en-IN-NeerjaNeural">Rahul (Indian English • Authoritative)</option>
+                  <option value="en-IN-KokoroNeural">Kokoro-82M (Deep Dalal Street)</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-mono text-slate-400 block mb-1.5">Speaking Rate & Cadence</label>
-                <select className="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500 font-mono">
-                  <option value="1.0">1.0x (Standard Institutional)</option>
-                  <option value="1.1">1.1x (Fast Financial Digest)</option>
-                  <option value="0.9">0.9x (Deliberate Explanatory)</option>
-                </select>
+                <label className="text-slate-400 block mb-1">BROADCAST ACCENT</label>
+                <div className="p-2 bg-slate-900 border border-slate-800 rounded-lg text-purple-400 text-xs flex items-center justify-between">
+                  <span>Indian English (Financial)</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                </div>
               </div>
             </div>
 
-            {/* Synthesis Status / Artifact Output */}
-            {generatedResult && (
-              <div className="mt-4 p-4 rounded-lg bg-emerald-950/20 border border-emerald-800/40 text-xs space-y-2">
-                <div className="flex items-center justify-between text-emerald-400 font-semibold">
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Artifact Synthesized Successfully
+            {/* Action Buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                onClick={handleSynthesizeAudio}
+                disabled={isGenerating}
+                className="py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 text-white rounded-xl font-bold font-mono text-xs flex items-center justify-center gap-2 shadow-lg shadow-purple-600/30 transition"
+              >
+                {isGenerating ? (
+                  <span className="flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Synthesizing Speech...
                   </span>
-                  <span className="font-mono text-[11px] text-slate-400">
-                    {generatedResult.filename || "briefing.mp3"}
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Volume2 className="w-4 h-4" />
+                    Synthesize & Speak Briefing
                   </span>
-                </div>
-                <div className="text-slate-300 font-mono text-[11px]">
-                  Engine: <span className="text-white">{generatedResult.engine || "Kokoro TTS"}</span> • Duration:{" "}
-                  <span className="text-white">~{generatedResult.duration_est_sec || 14.0}s</span>
-                </div>
-              </div>
-            )}
+                )}
+              </button>
+
+              <button
+                onClick={togglePlayback}
+                className={`py-3 rounded-xl font-bold font-mono text-xs flex items-center justify-center gap-2 border transition ${
+                  isPlaying
+                    ? "bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30"
+                    : "bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-800 hover:text-white"
+                }`}
+              >
+                {isPlaying ? (
+                  <>
+                    <VolumeX className="w-4 h-4 text-rose-400" />
+                    Stop Vocal Stream
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 text-emerald-400 fill-current" />
+                    Live Voice Playback
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

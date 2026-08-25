@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Clock, Radio, Activity, AlertCircle, RefreshCw } from "lucide-react";
+import { Clock, Radio, Activity, AlertCircle, RefreshCw, Send, Video, Zap } from "lucide-react";
 import { MarketStatusResponse, IndexQuote } from "@/types";
 import { formatNumber, formatPercent } from "@/lib/utils";
 

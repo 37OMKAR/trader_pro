@@ -1,10 +1,13 @@
 """
 Market AI — Voice & Avatar Briefing REST Endpoints
+Serves live neural TTS audio files and talking avatar briefing videos.
 """
 
 from typing import Optional
+from pathlib import Path
 from pydantic import BaseModel
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from services.voice_engine.tts_engine import KokoroTTSEngine
 from services.voice_engine.avatar_engine import TalkingAvatarEngine
 
@@ -37,3 +40,21 @@ async def generate_avatar(req: AvatarVideoRequest):
         audio_path=audio_res["file_path"],
         script_text=req.script_text,
     )
+
+
+@router.get("/stream/{filename}")
+async def stream_audio(filename: str):
+    """Streams generated MP3/WAV briefing audio file."""
+    file_path = Path("artifacts/audio") / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Audio file not found.")
+    return FileResponse(file_path, media_type="audio/mpeg")
+
+
+@router.get("/avatar-stream/{filename}")
+async def stream_avatar_video(filename: str):
+    """Streams rendered avatar video file."""
+    file_path = Path("artifacts/avatar_videos") / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="Avatar video file not found.")
+    return FileResponse(file_path, media_type="video/mp4")

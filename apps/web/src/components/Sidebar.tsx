@@ -19,6 +19,7 @@ import {
   Bell,
   Wallet,
   Send,
+  Globe,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -43,6 +44,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       items: [
         { id: "predictions", label: "AI Predictions", icon: Cpu },
         { id: "agentactivity", label: "Hermes Agent Hub", icon: Users },
+        { id: "research", label: "Web Research (TinyFish)", icon: Globe },
         { id: "skills", label: "Hermes Skills Matrix", icon: Zap },
         { id: "avatar", label: "Talking Avatar Studio", icon: Flame },
         { id: "tournaments", label: "Strategy Tournaments", icon: Trophy },
