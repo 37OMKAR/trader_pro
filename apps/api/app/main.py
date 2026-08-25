@@ -21,13 +21,18 @@ from apps.api.app.api.endpoints.tournaments import router as tournament_router
 from apps.api.app.api.endpoints.evolution import router as evolution_router
 from apps.api.app.api.endpoints.research import router as research_router
 from apps.api.app.api.endpoints.agent_activity import router as agent_activity_router
+from apps.api.app.api.endpoints.alerts import router as alerts_router
+from apps.api.app.api.endpoints.portfolio_risk import router as portfolio_risk_router
+from apps.api.app.api.endpoints.tutor import router as tutor_router
+from packages.market_data.yahoo_provider import YahooFinanceMarketDataProvider
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
 from packages.market_calendar.calendar import IST_TIMEZONE
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("market_ai.api")
 
-provider = DevelopmentMarketDataProvider()
+# Live Market Data Provider with Real Yahoo Finance Feed
+market_provider = YahooFinanceMarketDataProvider()
 
 
 async def background_market_ticker():
@@ -103,6 +108,9 @@ app.include_router(tournament_router, prefix=settings.API_V1_STR)
 app.include_router(evolution_router, prefix=settings.API_V1_STR)
 app.include_router(research_router, prefix=settings.API_V1_STR)
 app.include_router(agent_activity_router, prefix=settings.API_V1_STR)
+app.include_router(alerts_router, prefix=settings.API_V1_STR)
+app.include_router(portfolio_risk_router, prefix=settings.API_V1_STR)
+app.include_router(tutor_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

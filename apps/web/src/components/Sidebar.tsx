@@ -16,6 +16,8 @@ import {
   PieChart,
   Trophy,
   Users,
+  Bell,
+  Wallet,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -45,16 +47,17 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       ],
     },
     {
-      title: "PORTFOLIO & RISK",
+      title: "PORTFOLIO & EXECUTION",
       items: [
-        { id: "paper", label: "Paper Trading", icon: Briefcase },
-        { id: "risk", label: "Risk Engine", icon: ShieldAlert },
+        { id: "paper", label: "Paper Trading", icon: Wallet },
+        { id: "risk", label: "Portfolio Risk & VaR", icon: ShieldAlert },
+        { id: "alerts", label: "Alert Engine", icon: Bell },
+        { id: "tutor", label: "AI Market Tutor", icon: GraduationCap },
       ],
     },
     {
       title: "SYSTEM",
       items: [
-        { id: "tutor", label: "AI Market Tutor", icon: GraduationCap },
         { id: "settings", label: "Settings & APIs", icon: Settings },
       ],
     },

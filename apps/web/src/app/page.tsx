@@ -17,6 +17,9 @@ import { StrategyLabView } from "@/components/StrategyLabView";
 import { PaperTradingView } from "@/components/PaperTradingView";
 import { TournamentsView } from "@/components/TournamentsView";
 import { AgentActivityView } from "@/components/AgentActivityView";
+import { AlertsView } from "@/components/AlertsView";
+import { PortfolioRiskView } from "@/components/PortfolioRiskView";
+import { MarketTutorView } from "@/components/MarketTutorView";
 import { MarketAPI } from "@/lib/api";
 import {
   MarketStatusResponse,
@@ -205,6 +208,15 @@ export default function Home() {
 
           {/* TAB: Paper Trading Terminal */}
           {activeTab === "paper" && <PaperTradingView />}
+
+          {/* TAB: Portfolio Risk & VaR */}
+          {activeTab === "risk" && <PortfolioRiskView />}
+
+          {/* TAB: Alert Sentinel Engine */}
+          {activeTab === "alerts" && <AlertsView />}
+
+          {/* TAB: AI Market Tutor */}
+          {activeTab === "tutor" && <MarketTutorView />}
 
           {/* TAB: AI Predictions View */}
           {activeTab === "predictions" && (

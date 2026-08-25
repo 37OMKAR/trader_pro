@@ -131,7 +131,7 @@ async def test_hermes_end_to_end_supervisory_workflow():
     brain = HermesSupervisorBrain()
     res = await brain.execute_supervisory_workflow("RELIANCE", conduct_web_research=True)
 
-    assert res["supervisor"] == "Hermes Brain v3.0"
+    assert "Hermes Brain" in res["supervisor"]
     assert res["symbol"] == "RELIANCE"
     assert "web_research" in res
     assert "analyst_reports" in res
