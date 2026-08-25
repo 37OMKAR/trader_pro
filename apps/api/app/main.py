@@ -18,6 +18,9 @@ from apps.api.app.api.endpoints.derivatives import router as derivatives_router
 from apps.api.app.api.endpoints.strategies import router as strategies_router
 from apps.api.app.api.endpoints.paper_trading import router as paper_router
 from apps.api.app.api.endpoints.tournaments import router as tournament_router
+from apps.api.app.api.endpoints.evolution import router as evolution_router
+from apps.api.app.api.endpoints.research import router as research_router
+from apps.api.app.api.endpoints.agent_activity import router as agent_activity_router
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
 from packages.market_calendar.calendar import IST_TIMEZONE
 
@@ -97,6 +100,9 @@ app.include_router(derivatives_router, prefix=settings.API_V1_STR)
 app.include_router(strategies_router, prefix=settings.API_V1_STR)
 app.include_router(paper_router, prefix=settings.API_V1_STR)
 app.include_router(tournament_router, prefix=settings.API_V1_STR)
+app.include_router(evolution_router, prefix=settings.API_V1_STR)
+app.include_router(research_router, prefix=settings.API_V1_STR)
+app.include_router(agent_activity_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

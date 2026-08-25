@@ -16,6 +16,7 @@ import { DerivativesView } from "@/components/DerivativesView";
 import { StrategyLabView } from "@/components/StrategyLabView";
 import { PaperTradingView } from "@/components/PaperTradingView";
 import { TournamentsView } from "@/components/TournamentsView";
+import { AgentActivityView } from "@/components/AgentActivityView";
 import { MarketAPI } from "@/lib/api";
 import {
   MarketStatusResponse,
@@ -198,6 +199,9 @@ export default function Home() {
 
           {/* TAB: Strategy Tournaments & Leaderboard */}
           {activeTab === "tournaments" && <TournamentsView />}
+
+          {/* TAB: Hermes Supervisor Agent Hub */}
+          {activeTab === "agentactivity" && <AgentActivityView />}
 
           {/* TAB: Paper Trading Terminal */}
           {activeTab === "paper" && <PaperTradingView />}

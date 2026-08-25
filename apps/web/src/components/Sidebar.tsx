@@ -15,6 +15,7 @@ import {
   Flame,
   PieChart,
   Trophy,
+  Users,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -38,6 +39,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       title: "AI & QUANT",
       items: [
         { id: "predictions", label: "AI Predictions", icon: Cpu },
+        { id: "agentactivity", label: "Hermes Agent Hub", icon: Users },
         { id: "tournaments", label: "Strategy Tournaments", icon: Trophy },
         { id: "strategylab", label: "Strategy Lab", icon: FlaskConical },
       ],
