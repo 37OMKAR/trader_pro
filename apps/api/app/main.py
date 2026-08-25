@@ -24,6 +24,7 @@ from apps.api.app.api.endpoints.agent_activity import router as agent_activity_r
 from apps.api.app.api.endpoints.alerts import router as alerts_router
 from apps.api.app.api.endpoints.portfolio_risk import router as portfolio_risk_router
 from apps.api.app.api.endpoints.tutor import router as tutor_router
+from apps.api.app.api.endpoints.voice import router as voice_router
 from packages.market_data.yahoo_provider import YahooFinanceMarketDataProvider
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
 from packages.market_calendar.calendar import IST_TIMEZONE
@@ -111,6 +112,7 @@ app.include_router(agent_activity_router, prefix=settings.API_V1_STR)
 app.include_router(alerts_router, prefix=settings.API_V1_STR)
 app.include_router(portfolio_risk_router, prefix=settings.API_V1_STR)
 app.include_router(tutor_router, prefix=settings.API_V1_STR)
+app.include_router(voice_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")
