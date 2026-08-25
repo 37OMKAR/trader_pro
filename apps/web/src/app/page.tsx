@@ -10,6 +10,8 @@ import { FiiDiiCard } from "@/components/FiiDiiCard";
 import { SectorHeatmap } from "@/components/SectorHeatmap";
 import { MarketRegimeBadge } from "@/components/MarketRegimeBadge";
 import { TopMoversTable } from "@/components/TopMoversTable";
+import { StockDetailModal } from "@/components/StockDetailModal";
+import { AIPredictionsView } from "@/components/AIPredictionsView";
 import { MarketAPI } from "@/lib/api";
 import {
   MarketStatusResponse,
@@ -26,6 +28,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [selectedSymbol, setSelectedSymbol] = useState<string>("NIFTY 50");
   const [timeframe, setTimeframe] = useState<string>("1D");
+  const [modalStock, setModalStock] = useState<string | null>(null);
   
   // Data States
   const [status, setStatus] = useState<MarketStatusResponse | null>(null);
@@ -112,7 +115,6 @@ export default function Home() {
           try {
             const data = JSON.parse(event.data);
             if (data.event_type === "TICK") {
-              // Update indices or stocks live
               setIndices((prev) =>
                 prev.map((item) =>
                   item.symbol === data.symbol
@@ -146,7 +148,6 @@ export default function Home() {
 
         ws.onclose = () => {
           setIsConnected(false);
-          // Try reconnecting after 3 seconds
           setTimeout(connectWebSocket, 3000);
         };
 
@@ -185,48 +186,61 @@ export default function Home() {
 
         {/* Scrollable Dashboard Body */}
         <main className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* 1. Benchmark Index Cards */}
-          <IndexSummaryCards
-            indices={indices}
-            selectedSymbol={selectedSymbol}
-            onSelectIndex={(sym) => setSelectedSymbol(sym)}
-          />
-
-          {/* 2. Primary Chart & Regime Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <div className="lg:col-span-2">
-              <InteractiveChart
-                symbol={selectedSymbol}
-                candles={candles}
-                timeframe={timeframe}
-                setTimeframe={setTimeframe}
-                isLoading={isLoadingChart}
+          {/* TAB: AI Predictions View */}
+          {activeTab === "predictions" ? (
+            <AIPredictionsView
+              onSelectStock={(sym) => {
+                setModalStock(sym);
+              }}
+            />
+          ) : (
+            <>
+              {/* 1. Benchmark Index Cards */}
+              <IndexSummaryCards
+                indices={indices}
+                selectedSymbol={selectedSymbol}
+                onSelectIndex={(sym) => setSelectedSymbol(sym)}
               />
-            </div>
-            <div className="space-y-5">
-              <MarketRegimeBadge regime={regime} />
-              <MarketBreadthCard breadth={breadth} />
-            </div>
-          </div>
 
-          {/* 3. Secondary Analytics: FII/DII, Sectors, and Movers */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <FiiDiiCard fiiDii={fiiDii} />
-            <div className="md:col-span-2">
-              <SectorHeatmap sectors={sectors} />
-            </div>
-          </div>
+              {/* 2. Primary Chart & Regime Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                <div className="lg:col-span-2">
+                  <InteractiveChart
+                    symbol={selectedSymbol}
+                    candles={candles}
+                    timeframe={timeframe}
+                    setTimeframe={setTimeframe}
+                    isLoading={isLoadingChart}
+                  />
+                </div>
+                <div className="space-y-5">
+                  <MarketRegimeBadge regime={regime} />
+                  <MarketBreadthCard breadth={breadth} />
+                </div>
+              </div>
 
-          {/* 4. Top Equities Movers */}
-          <TopMoversTable
-            stocks={stocks}
-            onSelectStock={(sym) => {
-              setSelectedSymbol(sym);
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
+              {/* 3. Secondary Analytics: FII/DII, Sectors, and Movers */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <FiiDiiCard fiiDii={fiiDii} />
+                <div className="md:col-span-2">
+                  <SectorHeatmap sectors={sectors} />
+                </div>
+              </div>
+
+              {/* 4. Top Equities Movers */}
+              <TopMoversTable
+                stocks={stocks}
+                onSelectStock={(sym) => {
+                  setModalStock(sym);
+                }}
+              />
+            </>
+          )}
         </main>
       </div>
+
+      {/* Deep-Dive Stock Details Modal */}
+      <StockDetailModal symbol={modalStock} onClose={() => setModalStock(null)} />
     </div>
   );
 }
