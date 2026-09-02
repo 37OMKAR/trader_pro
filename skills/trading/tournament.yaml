@@ -1,0 +1,23 @@
+name: trading.tournament
+version: 1.0.0
+description: >
+  Return the strategy leaderboard for an asset — ranked by composite score across
+  Sharpe, CAGR, max drawdown, win rate, and trade count.
+inputs:
+  type: object
+  properties:
+    asset: { type: string, default: RELIANCE }
+outputs:
+  type: object
+  properties:
+    status: { type: string }
+    leaderboard: { type: array }
+handler:
+  type: http
+  method: GET
+  url: "${HERMES_SKILL_BASE}/skills/trading/tournament"
+  query:
+    asset: "{{inputs.asset}}"
+  headers:
+    Authorization: "Bearer ${HERMES_SKILL_TOKEN}"
+  timeout_seconds: 30

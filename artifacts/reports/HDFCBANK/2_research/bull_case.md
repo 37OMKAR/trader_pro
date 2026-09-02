@@ -1,6 +1,7 @@
-**Bullish Thesis**: HDFCBANK exhibits a rare confluence of double-digit earnings growth, healthy ROE, unbroken golden moving average alignment, and supportive institutional inflows. The risk-reward profile strongly favors accumulation on dips.
+**Bullish Thesis**: Net analyst signal +0.62 favors upside on HDFCBANK. Leading driver: macro at +0.97.
 
 **Catalysts**:
-- Strong quarterly profit trajectory and market share expansion.
-- Technical price structure breaking out above multi-week resistance.
-- Robust macro tailwinds with stable domestic liquidity support.
+- fundamentals contributes +0.59
+- technicals contributes +0.76
+- sentiment contributes +0.17
+- macro contributes +0.97

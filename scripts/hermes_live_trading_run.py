@@ -41,10 +41,32 @@ async def run_hermes_comprehensive_live_trading():
     print("HERMES SUPERVISORY BRAIN: COMPREHENSIVE MULTI-AGENT TRADING & DB MAPPING")
     print("=" * 80)
 
-    # 1. Initialize Database
+    # 1. Initialize Database + Hydrate Reflection Memory
     print("\n[Stage 1/5] Initializing Database Schema (SQLite / PostgreSQL)...")
     await init_db()
     print("            Database tables initialized and synchronized.")
+
+    from sqlalchemy import select as sa_select
+    from agents.reflection import Reflector as _Reflector
+    async with async_session_factory() as session:
+        try:
+            rows = (await session.execute(sa_select(ReflectionMemoryModel).order_by(ReflectionMemoryModel.created_at))).scalars().all()
+            records = [
+                {
+                    "symbol": r.symbol,
+                    "raw_return_pct": r.realized_pnl_pct,
+                    "alpha_vs_nifty": r.alpha_vs_nifty,
+                    "exit_reason": "PERSISTED",
+                    "lesson_learned": r.lesson_learned,
+                    "timestamp": r.created_at.isoformat() if r.created_at else "",
+                }
+                for r in rows
+            ]
+            loaded = _Reflector.hydrate_from_records(records)
+            stats = _Reflector.stats()
+            print(f"            Reflection memory hydrated: {loaded} past outcomes | global win_prob {stats['global_win_prob']}")
+        except Exception as exc:
+            print(f"            [WARN] Reflection hydration failed: {exc}")
 
     market_provider = YahooFinanceMarketDataProvider()
     hermes_brain = HermesSupervisorBrain()
@@ -155,9 +177,11 @@ async def run_hermes_comprehensive_live_trading():
     bt_mom_v1 = backtest_engine.run_backtest(strat_mom_v1, candles=candles_rel, initial_capital=1_000_000.0)
     bt_mean_rev = backtest_engine.run_backtest(strat_mean_rev, candles=candles_rel, initial_capital=1_000_000.0)
 
-    # Evolve & Mutate Momentum V1 -> V2
-    evo_res = evolution_agent.critique_and_evolve(strat_mom_v1, bt_mom_v1)
+    # Evolve & Mutate Momentum V1 -> V2 (gated re-backtest inside).
+    evo_res = evolution_agent.critique_and_evolve(strat_mom_v1, bt_mom_v1, candles=candles_rel)
     strat_mom_v2 = evo_res["mutated_strategy"]
+    if not evo_res.get("mutation_accepted", True):
+        print(f"       [EVOLUTION REJECTED] {evo_res.get('rejection_reason','')}")
     bt_mom_v2 = backtest_engine.run_backtest(strat_mom_v2, candles=candles_rel, initial_capital=1_000_000.0)
 
     strategies_to_save = [
@@ -237,23 +261,41 @@ async def run_hermes_comprehensive_live_trading():
         await session.commit()
     print(f"       [DB OK] Persisted Tournament Leaderboard ({len(tourney_res['leaderboard'])} entries ranked).")
 
-    # 4. Execute Virtual Dummy Money Trades in Paper Trading Portfolio
+    # 4. Execute Virtual Dummy Money Trades and Tick the Market Forward
     print("\n[Stage 4/5] Executing Virtual Dummy Money Orders into Rs.10,00,000 Portfolio...")
-    quotes = {}
-    for sym in target_symbols:
-        q = await market_provider.get_quote(sym)
-        quotes[sym] = q.last_price or 2000.0
 
-    # Place orders based on Hermes Lead Trader recommendations
+    # Pull daily bars for each target: use bar[-lookahead_days] as entry, tick the rest.
+    lookahead_days = 30
+    history_by_symbol: Dict[str, List[Any]] = {}
+    entry_prices: Dict[str, float] = {}
+    for sym in target_symbols:
+        candles = await market_provider.get_history(sym, timeframe="1D", limit=lookahead_days * 2 + 5)
+        history_by_symbol[sym] = candles
+        if len(candles) >= lookahead_days + 1:
+            entry_prices[sym] = float(candles[-(lookahead_days + 1)].close)
+        elif candles:
+            entry_prices[sym] = float(candles[0].close)
+        else:
+            q = await market_provider.get_quote(sym)
+            entry_prices[sym] = float(q.last_price or 2000.0)
+
+    # Place orders at the historical entry bar. HOLDs are skipped; SELL without an existing
+    # long position also skipped (short-selling not modelled in this paper account).
     for delib in deliberations_persisted:
         sym = delib["symbol"]
         order_info = delib["trade_proposal"]
-        action = order_info.get("action", "BUY")
-        entry_price = quotes.get(sym, order_info.get("entry_price", 2500.0))
+        action = order_info.get("action", "HOLD")
+        entry_price = entry_prices.get(sym, order_info.get("entry_price", 2500.0))
         alloc_pct = delib["alloc_pct"]
-        
-        # Sizing: (Capital * Alloc%) / Price
-        trade_capital = (paper_account.cash_balance * (alloc_pct / 100.0))
+
+        if action == "HOLD" or alloc_pct <= 0:
+            print(f"       Paper Order: HOLD {sym} @ Rs.{entry_price:,.2f} (net_score={order_info.get('net_score')})")
+            continue
+        if action == "SELL" and sym not in paper_account.positions:
+            print(f"       Paper Order: SELL SKIPPED (no long position in {sym}); short-selling not supported.")
+            continue
+
+        trade_capital = paper_account.cash_balance * (alloc_pct / 100.0)
         qty = max(1, int(trade_capital / max(1.0, entry_price)))
 
         fill_res = paper_account.place_order(
@@ -261,12 +303,41 @@ async def run_hermes_comprehensive_live_trading():
             action=action,
             quantity=qty,
             market_price=entry_price,
-            stop_loss=order_info.get("stop_loss", entry_price * 0.96),
-            target=order_info.get("target_1", entry_price * 1.06),
+            stop_loss=order_info.get("stop_loss", entry_price * 0.965),
+            target=order_info.get("target_1", entry_price * 1.070),
         )
         print(f"       Paper Order: {action} {qty} {sym} @ Rs.{entry_price:,.2f} -> Status: {fill_res['status']}")
 
+    # Tick forward through the lookahead window, firing stops/targets from real OHLC.
+    max_bars = min(lookahead_days, max((len(c) for c in history_by_symbol.values()), default=0))
+    exits_by_symbol: Dict[str, Dict[str, Any]] = {}
+    for offset in range(max_bars, 0, -1):
+        bar_time = None
+        bar_input: Dict[str, Dict[str, float]] = {}
+        for sym, candles in history_by_symbol.items():
+            if len(candles) < offset:
+                continue
+            c = candles[-offset]
+            bar_input[sym] = {"high": c.high, "low": c.low, "close": c.close}
+            bar_time = c.timestamp
+        exits = paper_account.tick(bar_input, bar_time=bar_time)
+        for ex in exits:
+            exits_by_symbol[ex["symbol"]] = ex
+        if not paper_account.positions:
+            break
+
+    # Mark-to-market surviving positions at the latest bar close.
+    quotes: Dict[str, float] = {}
+    for sym, candles in history_by_symbol.items():
+        if candles:
+            quotes[sym] = float(candles[-1].close)
+
     summary = paper_account.get_portfolio_summary(quotes)
+
+    closed = sum(1 for t in paper_account.trade_history if t["action"] == "SELL")
+    wins = sum(1 for t in paper_account.trade_history if t["action"] == "SELL" and t.get("pnl", 0.0) > 0)
+    print(f"       Ticked {max_bars} bars | Closed {closed} of {len(target_symbols)} trades | Wins: {wins}")
+    print(f"       Realized P&L: Rs.{summary['realized_pnl']:,.2f} | Unrealized P&L: Rs.{summary['unrealized_pnl']:,.2f}")
 
     # Persist Paper Account, Positions & Trades to DB
     async with async_session_factory() as session:
@@ -327,32 +398,43 @@ async def run_hermes_comprehensive_live_trading():
         await session.commit()
     print(f"       [DB OK] Persisted Paper Account Summary, {len(paper_account.trade_history)} Trades & {len(summary['positions'])} Active Positions.")
 
-    # 5. Post-Trade Reflection Memory Loop
+    # 5. Post-Trade Reflection Memory Loop (only on actually-closed trades)
     print("\n[Stage 5/5] Synthesizing Post-Trade Reflection Memory Bank...")
     async with async_session_factory() as session:
-        for trade in paper_account.trade_history:
+        closed_trades = [t for t in paper_account.trade_history if t["action"] == "SELL"]
+        if not closed_trades:
+            print("       No trades closed during the tick window — nothing to reflect on.")
+        for trade in closed_trades:
+            raw_return_pct = float(trade.get("pnl_pct", 0.0))
+            exit_reason = trade.get("exit_reason", "MANUAL_EXIT")
+            entry_price = float(trade.get("entry_price", trade["price"]))
+            exit_price = float(trade["price"])
+            realized_pnl = float(trade.get("pnl", 0.0))
+            # Alpha unknown without a NIFTY benchmark run in the same window; leave as 0.0.
+            alpha_vs_nifty = 0.0
+
             refl = await reflector.reflect_on_trade(
                 symbol=trade["symbol"],
                 initial_thesis=f"Hermes multi-agent consensus trade on {trade['symbol']}",
-                raw_return_pct=1.25,
-                alpha_vs_nifty_pct=0.90,
-                exit_reason="PROFIT_TARGET_HIT",
+                raw_return_pct=raw_return_pct,
+                alpha_vs_nifty_pct=alpha_vs_nifty,
+                exit_reason=exit_reason,
             )
             ref_model = ReflectionMemoryModel(
                 reflection_id=f"REFL-{trade['order_id']}",
                 trade_id=trade["order_id"],
                 symbol=trade["symbol"],
                 action=trade["action"],
-                entry_price=trade["price"],
-                exit_price=trade["price"] * 1.0125,
-                realized_pnl=round(trade["price"] * trade["quantity"] * 0.0125, 2),
-                realized_pnl_pct=1.25,
-                alpha_vs_nifty=0.90,
+                entry_price=entry_price,
+                exit_price=exit_price,
+                realized_pnl=round(realized_pnl, 2),
+                realized_pnl_pct=raw_return_pct,
+                alpha_vs_nifty=alpha_vs_nifty,
                 lesson_learned=refl["lesson"],
                 created_at=datetime.utcnow(),
             )
             session.add(ref_model)
-            print(f"       [DB OK] Reflection Persisted for {trade['symbol']} | Lesson: {refl['lesson'][:80]}...")
+            print(f"       [DB OK] Reflection Persisted for {trade['symbol']} | {exit_reason} {raw_return_pct:+.2f}% | Lesson: {refl['lesson'][:60]}...")
         await session.commit()
 
     # Final Summary Report
@@ -363,13 +445,39 @@ async def run_hermes_comprehensive_live_trading():
     print(f"Initial Capital:    Rs.{paper_account.initial_capital:,.2f}")
     print(f"Cash Balance:       Rs.{summary['cash_balance']:,.2f}")
     print(f"Invested Value:     Rs.{summary['invested_value']:,.2f}")
-    print(f"Total Portfolio:    Rs.{summary['portfolio_value']:,.2f}")
+    print(f"Total Portfolio:    Rs.{summary['total_portfolio_value']:,.2f}")
+    print(f"Realized P&L:       Rs.{summary['realized_pnl']:,.2f}  ({summary['total_pnl_pct']:+.2f}% total)")
+    closed_ct = sum(1 for t in paper_account.trade_history if t["action"] == "SELL")
+    wins_ct = sum(1 for t in paper_account.trade_history if t["action"] == "SELL" and t.get("pnl", 0.0) > 0)
+    win_rate = (wins_ct / closed_ct * 100.0) if closed_ct else 0.0
+    print(f"Closed Trades:      {closed_ct} of {len(target_symbols)} | Wins: {wins_ct} | Win Rate: {win_rate:.1f}%")
     print(f"Active Positions:   {len(summary['positions'])} Indian Large Caps")
-    print(f"Deliberations Log:  5 Assets Synthesized by Hermes Super-Firm")
+    print(f"Deliberations Log:  {len(deliberations_persisted)} Assets Synthesized by Hermes Super-Firm")
     print(f"Strategies Active:  3 Multi-Factor Strategies Evaluated")
     print(f"Database Mapping:   100% Persisted in SQLite / PostgreSQL (market_ai.db)")
     print("=" * 80 + "\n")
 
 
+async def run_autonomous_loop(cycles: int = 3, interval_seconds: float = 0.0) -> None:
+    """Run Hermes N times in sequence. Each cycle rehydrates memory so the win_prob learned
+    from cycle K is used at cycle K+1. Set interval_seconds > 0 to pace the loop.
+    """
+    for i in range(1, cycles + 1):
+        print("\n" + "#" * 80)
+        print(f"HERMES AUTONOMOUS CYCLE {i}/{cycles}")
+        print("#" * 80)
+        await run_hermes_comprehensive_live_trading()
+        if interval_seconds > 0 and i < cycles:
+            await asyncio.sleep(interval_seconds)
+
+
 if __name__ == "__main__":
-    asyncio.run(run_hermes_comprehensive_live_trading())
+    import argparse
+    parser = argparse.ArgumentParser(description="Hermes multi-agent trading runner.")
+    parser.add_argument("--cycles", type=int, default=1, help="How many supervisory cycles to run.")
+    parser.add_argument("--interval", type=float, default=0.0, help="Seconds between cycles.")
+    args = parser.parse_args()
+    if args.cycles > 1:
+        asyncio.run(run_autonomous_loop(cycles=args.cycles, interval_seconds=args.interval))
+    else:
+        asyncio.run(run_hermes_comprehensive_live_trading())

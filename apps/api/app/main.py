@@ -27,6 +27,7 @@ from apps.api.app.api.endpoints.tutor import router as tutor_router
 from apps.api.app.api.endpoints.voice import router as voice_router
 from apps.api.app.api.endpoints.skills import router as skills_router
 from apps.api.app.api.endpoints.telegram import router as telegram_router
+from apps.api.app.api.endpoints.hermes_skills import router as hermes_skills_router
 from packages.market_data.yahoo_provider import YahooFinanceMarketDataProvider
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
 from packages.market_calendar.calendar import IST_TIMEZONE
@@ -117,6 +118,7 @@ app.include_router(tutor_router, prefix=settings.API_V1_STR)
 app.include_router(voice_router, prefix=settings.API_V1_STR)
 app.include_router(skills_router, prefix=settings.API_V1_STR)
 app.include_router(telegram_router, prefix=settings.API_V1_STR)
+app.include_router(hermes_skills_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

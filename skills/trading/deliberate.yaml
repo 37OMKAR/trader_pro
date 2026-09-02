@@ -1,0 +1,27 @@
+name: trading.deliberate
+version: 1.0.0
+description: >
+  Run the full Hermes multi-agent workflow (analysts, debate, trader, risk committee)
+  on a single Indian equity and return the deliberation trace.
+inputs:
+  type: object
+  properties:
+    symbol: { type: string, description: "NSE symbol, e.g. RELIANCE" }
+    portfolio_value: { type: number, default: 1000000, description: "Total NAV in INR" }
+    conduct_web_research: { type: boolean, default: false }
+  required: [symbol]
+outputs:
+  type: object
+  properties:
+    status: { type: string, enum: [OK, PAUSED_OR_HALTED] }
+    deliberation:
+      type: object
+      description: Full state packet — analyst_reports, debate, trade_proposal, risk_evaluation, hermes_executive_briefing.
+handler:
+  type: http
+  method: POST
+  url: "${HERMES_SKILL_BASE}/skills/trading/deliberate"
+  headers:
+    Authorization: "Bearer ${HERMES_SKILL_TOKEN}"
+    Content-Type: "application/json"
+  timeout_seconds: 120

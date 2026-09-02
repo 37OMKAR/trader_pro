@@ -1,8 +1,8 @@
 - **Action**: BUY
-- **Entry Price**: ₹4136.46
-- **Target 1**: ₹4426.01
-- **Stop Loss**: ₹3991.68
-- **Risk/Reward Ratio**: 1:2.0
-- **Suggested Allocation**: 10.0%
+- **Entry Price**: ₹4133.3
+- **Target 1**: ₹4547.45
+- **Stop Loss**: ₹3967.64
+- **Risk/Reward Ratio**: 1:2.5
+- **Suggested Allocation**: 4.0%
 
-**Rational Strategy**: Bull thesis outweighs near-term bear risks. Golden moving average alignment and solid fundamentals offer an asymmetric 1:2.0 risk-to-reward setup with disciplined stop loss at ₹3991.68.
+**Rational Strategy**: Weighted analyst score +0.19, debate delta +0.45 => net +0.27 => BUY. ATR ₹92.8061 sizing gives 1:2.5.

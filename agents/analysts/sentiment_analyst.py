@@ -1,50 +1,63 @@
 """
 Market AI — Sentiment Analyst Agent
-Tracks social mood, options PCR (Put-Call Ratio), retail buzz, and positioning.
+Derives a sentiment proxy from price/volume behavior when a real
+sentiment feed isn't wired: rising volume on up days = bullish tape,
+falling volume on up days = distribution, and the reverse for down days.
+Emits a numeric signal for downstream voting.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 from agents.llm_provider import LLMClient
+from agents.indicators import volume_zscore, rolling_return_pct, clamp
 
 
 class SentimentAnalystAgent:
-    """Specialized agent analyzing market sentiment, retail mood, and options positioning."""
+    """Tape-based sentiment proxy in the absence of a live social feed."""
 
     def __init__(self, llm: LLMClient):
         self.llm = llm
         self.name = "Sentiment Analyst"
 
-    async def analyze(self, symbol: str) -> Dict[str, Any]:
-        pcr_ratio = 1.18  # Put-Call Ratio > 1.0 indicates bullish support building
-        sentiment_score = 78  # 0 to 100
-        social_buzz = "HIGH"
-        retail_positioning = "MODERATELY_LONG"
+    async def analyze(
+        self,
+        symbol: str,
+        quote_data: Dict[str, Any] = None,
+        candles: List[Any] = None,
+    ) -> Dict[str, Any]:
+        candles = candles or []
+        vzs = volume_zscore(candles, 20) or 0.0
+        ret5 = rolling_return_pct(candles, 5) or 0.0
+
+        # Up-days on above-average volume = bullish participation.
+        # Down-days on above-average volume = distribution.
+        participation = vzs if ret5 >= 0 else -vzs
+        signal = clamp(0.6 * clamp(ret5 / 8.0) + 0.4 * clamp(participation / 3.0))
+        classification = "BULLISH" if signal > 0.2 else ("BEARISH" if signal < -0.2 else "NEUTRAL")
+        sentiment_score = int(round(50 + signal * 50))
+        confidence = round(clamp(0.4 + abs(signal) * 0.5, 0.4, 1.0), 2)
 
         system_prompt = (
-            "You are a Quantitative Sentiment & Derivatives Analyst for Indian financial markets. "
-            "Evaluate Put-Call Ratio (PCR), social mood, retail positioning, and crowd sentiment."
+            "You are a Quant Sentiment & Derivatives Analyst. Given tape-based cues, "
+            "provide a concise 2-3 sentence verdict on flow and positioning."
         )
-
         user_prompt = (
-            f"Analyze market sentiment for {symbol}:\n"
-            f"- Put-Call Ratio (PCR): {pcr_ratio} (Bullish Put writing)\n"
-            f"- Composite Sentiment Score: {sentiment_score}/100 (Strong Optimism)\n"
-            f"- Social & Media Buzz: {social_buzz}\n"
-            f"- Retail Positioning: {retail_positioning}\n\n"
-            "Provide: 1. Sentiment Bias, 2. Contrarian risk check, 3. Summary."
+            f"{symbol}: 5-day return {ret5}%, volume z-score {vzs}, participation {participation:.2f}. "
+            f"Sentiment: {classification}."
         )
-
         llm_commentary = await self.llm.generate(system_prompt, user_prompt)
 
         return {
             "agent": self.name,
             "symbol": symbol,
+            "signal": round(signal, 3),
+            "confidence": confidence,
             "sentiment_score": sentiment_score,
-            "pcr_ratio": pcr_ratio,
-            "sentiment_classification": "BULLISH",
+            "sentiment_classification": classification,
+            "volume_zscore": vzs,
+            "return_5d_pct": ret5,
             "summary": (
-                f"PCR of {pcr_ratio} reflects strong institutional base-building. "
-                f"Composite social & options sentiment is positive at {sentiment_score}/100 with no signs of euphoric exhaustion."
+                f"Tape sentiment {classification} (score {sentiment_score}/100). "
+                f"5d return {ret5}% on volume z {vzs}. Signal {round(signal,3)} (conf {confidence})."
             ),
             "llm_commentary": llm_commentary,
         }

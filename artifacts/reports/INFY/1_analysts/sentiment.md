@@ -1,7 +1,3 @@
-PCR of 1.18 reflects strong institutional base-building. Composite social & options sentiment is positive at 78/100 with no signs of euphoric exhaustion.
+Tape sentiment BEARISH (score 40/100). 5d return -1.73% on volume z 0.53. Signal -0.2 (conf 0.5).
 
-1. Sentiment Bias: The overall sentiment for INFY appears to be strongly bullish. The high Put-Call Ratio (PCR) indicates more put writing than call buying, which suggests a bullish bias as market participants are not aggressively buying puts to hedge their long positions. The Composite Sentiment Score of 78 out of 100 also reflects strong optimism in the market. Additionally, the high social and media buzz surrounding INFY indicates a positive sentiment among market participants.
-
-2. Contrarian Risk Check: While the sentiment is overwhelmingly bullish, there are a few factors that suggest a potential contrarian risk. Firstly, the retail positioning is only moderately long, which indicates that retail investors are not fully convinced about the bullish sentiment and may be waiting for further confirmation before taking larger long positions. Secondly, extremely high levels of optimism can sometimes be a contrarian indicator, as it may signal a potential top in the market if everyone is already long and there are no new buyers left to drive the price higher.
-
-3. Summary: The overall market sentiment for INFY is strongly bullish, with a high PCR, strong Composite Sentiment Score, and high social and media buzz. However, there are some contrarian risks to consider, such as the moderately long retail positioning and the potential for extreme optimism to be a contrarian indicator. Investors should keep a close eye on these factors and be prepared for potential volatility or a reversal in sentiment if the market fails to live up to the current bullish expectations.
+Deterministic institutional financial intelligence memo synthesized from quantitative data feeds.

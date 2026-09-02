@@ -90,3 +90,9 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Runtime ops state (governance JSON files) — code lives in ops/*.py; JSON is per-host runtime.
+ops/state.json
+ops/limits.json
+ops/analyst_weights.json
+ops/runner.stop

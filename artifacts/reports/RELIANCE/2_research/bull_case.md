@@ -1,6 +1,4 @@
-**Bullish Thesis**: RELIANCE exhibits a rare confluence of double-digit earnings growth, healthy ROE, unbroken golden moving average alignment, and supportive institutional inflows. The risk-reward profile strongly favors accumulation on dips.
+**Bullish Thesis**: Net analyst signal +0.12 favors upside on RELIANCE. Leading driver: macro at +0.97.
 
 **Catalysts**:
-- Strong quarterly profit trajectory and market share expansion.
-- Technical price structure breaking out above multi-week resistance.
-- Robust macro tailwinds with stable domestic liquidity support.
+- macro contributes +0.97

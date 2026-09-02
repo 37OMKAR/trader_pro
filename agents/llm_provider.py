@@ -19,11 +19,12 @@ class LLMClient:
     """Unified client for calling LongCat AI, Hermes-3 (OpenRouter), DeepSeek, Gemini, and OpenAI."""
 
     def __init__(self, provider: Optional[str] = None, model: Optional[str] = None):
-        self.provider = (provider or os.getenv("DEFAULT_LLM_PROVIDER", "openrouter")).lower()
+        self.provider = (provider or os.getenv("DEFAULT_LLM_PROVIDER", "longcat")).lower()
         self.model = model or os.getenv("DEFAULT_MODEL", "nousresearch/hermes-3-llama-3.1-70b")
-        
-        # API Keys
-        self.longcat_key = os.getenv("LONGCAT_API_KEY") or "ak_28o19G0p43Lk2pd2Kq8ve4375eY2e"
+        self.longcat_model = os.getenv("LONGCAT_MODEL", "LongCat-2.0")
+
+        # API keys — sourced from .env only. Never commit secrets to source.
+        self.longcat_key = os.getenv("LONGCAT_API_KEY")
         self.openrouter_key = os.getenv("OPENROUTER_API_KEY")
         self.deepseek_key = os.getenv("DEEPSEEK_API_KEY")
         self.tinyfish_key = os.getenv("TINYFISH_API_KEY")
@@ -31,51 +32,69 @@ class LLMClient:
         self.openai_key = os.getenv("OPENAI_API_KEY")
         self.claude_key = os.getenv("ANTHROPIC_API_KEY")
 
-    async def generate(self, system_prompt: str, user_prompt: str, temperature: float = 0.3) -> str:
-        """Dispatches prompt with automatic fallback across LongCat, OpenRouter Hermes, and DeepSeek."""
-        # 1. Direct LongCat AI API
-        if self.longcat_key and (self.provider == "longcat" or not self.openrouter_key):
+    async def generate(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        temperature: float = 0.3,
+        force: bool = False,
+        heavy: bool = False,
+    ) -> str:
+        """Dispatch across providers, gated by env for cost/latency control.
+
+        - USE_LLM_COMMENTARY=0 in .env skips the LLM entirely for cheap prose calls
+          (analysts, researchers, trader rationale) and returns the local synthesizer.
+        - `force=True` bypasses the gate — the caller has decided this call is worth it.
+        - `heavy=True` routes to LongCat first when available (chosen model for
+          maximum-context, deeper-reasoning workloads: Hermes memo, reflection lessons,
+          weekly review). Falls back to the normal provider chain if LongCat fails.
+        """
+        if not force and os.getenv("USE_LLM_COMMENTARY", "1").strip() in ("0", "false", "False", "no"):
+            return self._generate_local_reasoning(system_prompt, user_prompt)
+
+        if heavy and self.longcat_key:
             try:
                 return await self._call_longcat(system_prompt, user_prompt, temperature)
             except Exception as e:
-                logger.warning(f"LongCat API call failed: {e}. Trying OpenRouter Hermes...")
+                logger.warning(f"LongCat (heavy) failed: {e}. Falling back to default chain...")
 
-        # 2. OpenRouter (Hermes-3 Brain)
-        if self.openrouter_key:
+        provider_chain = self._chain_for(self.provider)
+        for name, callable_ in provider_chain:
             try:
-                return await self._call_openrouter(system_prompt, user_prompt, temperature)
+                return await callable_(system_prompt, user_prompt, temperature)
             except Exception as e:
-                logger.warning(f"OpenRouter/Hermes API call failed: {e}. Trying DeepSeek...")
-
-        # 3. DeepSeek API
-        if self.deepseek_key:
-            try:
-                return await self._call_deepseek(system_prompt, user_prompt, temperature)
-            except Exception as e:
-                logger.warning(f"DeepSeek API call failed: {e}. Trying Gemini/OpenAI...")
-
-        # 4. LongCat Fallback
-        if self.longcat_key:
-            try:
-                return await self._call_longcat(system_prompt, user_prompt, temperature)
-            except Exception as e:
-                logger.warning(f"LongCat fallback failed: {e}.")
-
-        # 5. Local High-Fidelity Quantitative Synthesizer
+                logger.warning(f"{name} call failed: {e}. Trying next provider...")
         return self._generate_local_reasoning(system_prompt, user_prompt)
 
+    def _chain_for(self, provider: str):
+        """Return an ordered list of (name, coro) pairs to try for this call."""
+        candidates = []
+        # Primary
+        if provider == "longcat" and self.longcat_key:
+            candidates.append(("longcat", self._call_longcat))
+        if provider == "deepseek" and self.deepseek_key:
+            candidates.append(("deepseek", self._call_deepseek))
+        if provider == "openrouter" and self.openrouter_key:
+            candidates.append(("openrouter", self._call_openrouter))
+        # Fallbacks (skip already-added primary)
+        already = {n for n, _ in candidates}
+        if "longcat" not in already and self.longcat_key:
+            candidates.append(("longcat", self._call_longcat))
+        if "deepseek" not in already and self.deepseek_key:
+            candidates.append(("deepseek", self._call_deepseek))
+        if "openrouter" not in already and self.openrouter_key:
+            candidates.append(("openrouter", self._call_openrouter))
+        return candidates
+
     async def _call_longcat(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
-        """Call LongCat AI API endpoint."""
-        endpoints = [
-            "https://api.longcat.chat/v1/chat/completions",
-            "https://api.longcat.ai/v1/chat/completions",
-        ]
+        """Call the LongCat AI OpenAI-compatible endpoint."""
+        url = "https://api.longcat.chat/openai/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.longcat_key}",
             "Content-Type": "application/json",
         }
         payload = {
-            "model": "longcat-v1",
+            "model": self.longcat_model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -83,16 +102,16 @@ class LLMClient:
             "temperature": temperature,
             "max_tokens": 1200,
         }
-        for ep in endpoints:
-            try:
-                async with httpx.AsyncClient(timeout=3.5) as client:
-                    resp = await client.post(ep, headers=headers, json=payload)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        return data["choices"][0]["message"]["content"]
-            except Exception:
-                continue
-        raise RuntimeError("LongCat endpoints unreachable with current key, falling to OpenRouter Hermes.")
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            msg = (data.get("choices") or [{}])[0].get("message", {}) or {}
+            # LongCat is a reasoning model — prefer content, fall back to reasoning_content.
+            content = msg.get("content") or msg.get("reasoning_content") or ""
+            if not content:
+                raise RuntimeError(f"LongCat returned empty message: {data}")
+            return content.strip()
 
     async def _call_openrouter(self, system_prompt: str, user_prompt: str, temperature: float) -> str:
         """Call OpenRouter API with Hermes-3 Brain."""

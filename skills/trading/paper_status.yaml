@@ -1,0 +1,25 @@
+name: trading.paper_status
+version: 1.0.0
+description: >
+  Return the current paper account snapshot: NAV, cash, positions, realized/unrealized
+  P&L, and (optionally) a preformatted end-of-day digest suitable for messaging.
+inputs:
+  type: object
+  properties:
+    digest: { type: boolean, default: false, description: "Include human-readable digest text." }
+outputs:
+  type: object
+  properties:
+    status: { type: string }
+    summary: { type: object }
+    ops: { type: object }
+    digest_text: { type: string }
+handler:
+  type: http
+  method: GET
+  url: "${HERMES_SKILL_BASE}/skills/trading/paper_status"
+  query:
+    digest: "{{inputs.digest}}"
+  headers:
+    Authorization: "Bearer ${HERMES_SKILL_TOKEN}"
+  timeout_seconds: 10

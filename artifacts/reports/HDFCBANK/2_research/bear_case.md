@@ -1,6 +1,4 @@
-**Bearish Thesis**: While top-line growth is sound, HDFCBANK faces near-term multiple compression if broader market momentum slows. Immediate overhead resistance poses a false breakout trap if volume falters.
+**Bearish Thesis**: Net analyst signal +0.62 for HDFCBANK. Weakest pillar: sentiment at +0.17.
 
 **Risk Triggers**:
-- Overhead technical resistance cluster creating supply overhang.
-- Potential raw material input inflation dampening operating margins.
-- Global yield spikes that could trigger sudden foreign institutional profit-taking.
+- No clear negative contributors — bear case is weak.

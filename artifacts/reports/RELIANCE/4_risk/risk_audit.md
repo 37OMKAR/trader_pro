@@ -1,6 +1,6 @@
 - **Risk Verdict**: APPROVED
-- **Max Approved Shares**: 33
-- **Allocated Capital**: ₹100,000.00
-- **Max Portfolio Risk**: ₹3,428.70 (0.34%)
+- **Max Approved Shares**: 10
+- **Allocated Capital**: ₹29,705.67
+- **Max Portfolio Risk**: ₹1,418.20 (0.14%)
 
-**CRO Governance Audit**: Risk checks passed. Position capped at 33 shares (₹100,000.00). Maximum downside risk strictly limited to ₹3,428.70 (0.34% of total capital).
+**CRO Governance Audit**: Risk checks passed. Position capped at 10 shares (₹29,705.67). Maximum downside risk strictly limited to ₹1,418.20 (0.14% of total capital).

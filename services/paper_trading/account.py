@@ -144,6 +144,73 @@ class PaperTradingAccount:
 
         return {"status": "REJECTED", "reason": "Invalid action."}
 
+    def tick(
+        self,
+        bar: Dict[str, Dict[str, float]],
+        bar_time: Optional[datetime] = None,
+    ) -> List[Dict[str, Any]]:
+        """Advance one price bar and fire stop-loss or target exits.
+
+        `bar` maps symbol -> {"high": float, "low": float, "close": float}.
+        Intrabar rule: if BOTH stop and target are touched in the same bar,
+        assume stop hits first (conservative). Fills at the trigger price.
+        Returns the list of exit trades recorded this tick.
+        """
+        exits: List[Dict[str, Any]] = []
+        bar_time = bar_time or datetime.now(IST_TIMEZONE)
+        for symbol in list(self.positions.keys()):
+            candle = bar.get(symbol)
+            if not candle:
+                continue
+            pos = self.positions[symbol]
+            stop = pos.get("stop_loss")
+            target = pos.get("target")
+            qty = pos["quantity"]
+            avg = pos["average_price"]
+            high = float(candle.get("high", candle.get("close", 0.0)))
+            low = float(candle.get("low", candle.get("close", 0.0)))
+
+            fill_price: Optional[float] = None
+            reason: Optional[str] = None
+            if stop is not None and low <= stop:
+                fill_price = float(stop)
+                reason = "STOP_LOSS_HIT"
+            elif target is not None and high >= target:
+                fill_price = float(target)
+                reason = "PROFIT_TARGET_HIT"
+
+            if fill_price is None:
+                continue
+
+            gross_proceeds = fill_price * qty
+            fee = 20.0  # flat exit slippage/fee for the simulated fill
+            net_proceeds = gross_proceeds - fee
+            cost_basis = avg * qty
+            trade_pnl = net_proceeds - cost_basis
+
+            self.realized_pnl += trade_pnl
+            self.cash_balance += net_proceeds
+            self.total_fees_paid += fee
+            del self.positions[symbol]
+
+            order_record = {
+                "order_id": f"ORD-{uuid.uuid4().hex[:8].upper()}",
+                "timestamp": bar_time.isoformat(),
+                "symbol": symbol,
+                "action": "SELL",
+                "quantity": qty,
+                "price": fill_price,
+                "fee": fee,
+                "pnl": round(trade_pnl, 2),
+                "pnl_pct": round((trade_pnl / max(1.0, cost_basis)) * 100.0, 2),
+                "exit_reason": reason,
+                "entry_price": avg,
+                "status": "FILLED",
+            }
+            self.trade_history.append(order_record)
+            exits.append(order_record)
+        return exits
+
     def get_portfolio_summary(self, current_quotes: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
         """Calculates live mark-to-market valuations and unrealized P&L."""
         current_quotes = current_quotes or {}

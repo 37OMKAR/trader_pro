@@ -1,53 +1,61 @@
 """
 Market AI — Bullish Researcher Agent
-Constructs the strongest bull thesis, identifying upside drivers, growth catalysts, and high-conviction targets.
+Scores the bull case from real analyst signals. Higher net signal => higher conviction.
 """
 
 from typing import Dict, Any, List
 from agents.llm_provider import LLMClient
+from agents.indicators import clamp
 
 
 class BullishResearcherAgent:
-    """Specialist researcher championing the Bull Case in investment debates."""
-
     def __init__(self, llm: LLMClient):
         self.llm = llm
         self.name = "Bullish Researcher"
 
     async def argue(self, symbol: str, analyst_reports: Dict[str, Any]) -> Dict[str, Any]:
-        fund = analyst_reports.get("fundamentals", {})
-        tech = analyst_reports.get("technicals", {})
-        macro = analyst_reports.get("macro", {})
+        signals: List[float] = []
+        for k in ("fundamentals", "technicals", "sentiment", "macro"):
+            s = float(analyst_reports.get(k, {}).get("signal", 0.0))
+            signals.append(s)
+        net = sum(signals) / max(1, len(signals))
+
+        # Bull conviction only counts positive contribution.
+        bull_score = clamp(max(0.0, net) + 0.5 * max(0.0, max(signals) - abs(min(signals))))
+        conviction_label = "HIGH" if bull_score > 0.5 else ("MODERATE" if bull_score > 0.2 else "LOW")
 
         system_prompt = (
-            "You are the Lead Bullish Research Analyst at an institutional trading firm. "
-            "Your objective is to make the strongest, data-backed case FOR buying/going long on the asset. "
-            "Synthesize fundamental strength, technical breakout patterns, and macro tailwinds."
+            "You are the Lead Bullish Research Analyst. Given the numeric signals, "
+            "state the strongest bull case in 3 sentences and cite the drivers."
         )
-
         user_prompt = (
-            f"Build the Bull Case for {symbol} based on analyst findings:\n"
-            f"- Fundamental Summary: {fund.get('summary')}\n"
-            f"- Technical Summary: {tech.get('summary')}\n"
-            f"- Macro Environment: {macro.get('summary')}\n\n"
-            "Format your argument with: 1. Core Thesis, 2. Three Catalysts for Upside, 3. Upside Target."
+            f"{symbol}: fundamentals={signals[0]}, technicals={signals[1]}, "
+            f"sentiment={signals[2]}, macro={signals[3]}, mean={net:.3f}, bull_score={bull_score:.3f}."
         )
-
         llm_argument = await self.llm.generate(system_prompt, user_prompt)
 
+        strongest = max(
+            ("fundamentals", signals[0]),
+            ("technicals", signals[1]),
+            ("sentiment", signals[2]),
+            ("macro", signals[3]),
+            key=lambda x: x[1],
+        )
         return {
             "agent": self.name,
             "stance": "BULLISH",
-            "conviction": "HIGH",
+            "conviction": conviction_label,
+            "score": round(bull_score, 3),
+            "net_signal": round(net, 3),
+            "leading_driver": strongest[0],
             "thesis": (
-                f"{symbol} exhibits a rare confluence of double-digit earnings growth, healthy ROE, "
-                f"unbroken golden moving average alignment, and supportive institutional inflows. "
-                f"The risk-reward profile strongly favors accumulation on dips."
+                f"Net analyst signal {net:+.2f} favors upside on {symbol}. "
+                f"Leading driver: {strongest[0]} at {strongest[1]:+.2f}."
             ),
             "catalysts": [
-                "Strong quarterly profit trajectory and market share expansion.",
-                "Technical price structure breaking out above multi-week resistance.",
-                "Robust macro tailwinds with stable domestic liquidity support.",
-            ],
+                f"{k} contributes {v:+.2f}" for k, v in zip(
+                    ("fundamentals", "technicals", "sentiment", "macro"), signals
+                ) if v > 0.1
+            ] or ["No positive contributors — bull case is weak."],
             "llm_argument": llm_argument,
         }

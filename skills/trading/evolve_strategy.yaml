@@ -1,0 +1,27 @@
+name: trading.evolve_strategy
+version: 1.0.0
+description: >
+  Critique a strategy against its backtest metrics and, if warranted, produce a mutated
+  successor. The mutation is re-backtested against the same candles and rejected if
+  strictly worse than the parent (bounded Sharpe/drawdown check).
+inputs:
+  type: object
+  properties:
+    strategy_id: { type: string }
+    candles_symbol: { type: string, default: RELIANCE }
+    lookback: { type: integer, default: 90 }
+  required: [strategy_id]
+outputs:
+  type: object
+  properties:
+    status: { type: string }
+    evolution: { type: object }
+    parent_backtest: { type: object }
+handler:
+  type: http
+  method: POST
+  url: "${HERMES_SKILL_BASE}/skills/trading/evolve_strategy"
+  headers:
+    Authorization: "Bearer ${HERMES_SKILL_TOKEN}"
+    Content-Type: "application/json"
+  timeout_seconds: 60

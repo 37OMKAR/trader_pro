@@ -1,52 +1,60 @@
 """
 Market AI — Bearish Researcher Agent
-Constructs the strongest bear thesis, stress-testing valuation, risks, execution failure points, and downside targets.
+Scores the bear case from real analyst signals. Lower (more negative) net signal => higher conviction.
 """
 
 from typing import Dict, Any, List
 from agents.llm_provider import LLMClient
+from agents.indicators import clamp
 
 
 class BearishResearcherAgent:
-    """Specialist researcher championing the Bear Case and downside risk scrutiny."""
-
     def __init__(self, llm: LLMClient):
         self.llm = llm
         self.name = "Bearish Researcher"
 
     async def argue(self, symbol: str, analyst_reports: Dict[str, Any]) -> Dict[str, Any]:
-        fund = analyst_reports.get("fundamentals", {})
-        tech = analyst_reports.get("technicals", {})
-        macro = analyst_reports.get("macro", {})
+        signals: List[float] = []
+        for k in ("fundamentals", "technicals", "sentiment", "macro"):
+            s = float(analyst_reports.get(k, {}).get("signal", 0.0))
+            signals.append(s)
+        net = sum(signals) / max(1, len(signals))
+
+        bear_score = clamp(max(0.0, -net) + 0.5 * max(0.0, abs(min(signals)) - max(signals)))
+        conviction_label = "HIGH" if bear_score > 0.5 else ("MODERATE" if bear_score > 0.2 else "LOW")
 
         system_prompt = (
-            "You are the Chief Skeptic & Bearish Research Analyst at an institutional trading firm. "
-            "Your objective is to stress-test the investment hypothesis, find flaws, downside vulnerabilities, "
-            "margin compression risks, and reason why this trade might fail."
+            "You are the Chief Skeptic. Given the numeric signals, "
+            "state the strongest bear case in 3 sentences and cite the vulnerabilities."
         )
-
         user_prompt = (
-            f"Build the Bear Case / Risk Thesis for {symbol}:\n"
-            f"- Fundamental Summary: {fund.get('summary')}\n"
-            f"- Technical Summary: {tech.get('summary')}\n"
-            f"- Macro Environment: {macro.get('summary')}\n\n"
-            "Format your argument with: 1. Key Vulnerabilities, 2. Three Risk Triggers, 3. Downside Support Breakdown Level."
+            f"{symbol}: fundamentals={signals[0]}, technicals={signals[1]}, "
+            f"sentiment={signals[2]}, macro={signals[3]}, mean={net:.3f}, bear_score={bear_score:.3f}."
         )
-
         llm_argument = await self.llm.generate(system_prompt, user_prompt)
 
+        weakest = min(
+            ("fundamentals", signals[0]),
+            ("technicals", signals[1]),
+            ("sentiment", signals[2]),
+            ("macro", signals[3]),
+            key=lambda x: x[1],
+        )
         return {
             "agent": self.name,
             "stance": "BEARISH",
-            "conviction": "MODERATE",
+            "conviction": conviction_label,
+            "score": round(bear_score, 3),
+            "net_signal": round(net, 3),
+            "leading_risk": weakest[0],
             "thesis": (
-                f"While top-line growth is sound, {symbol} faces near-term multiple compression if broader "
-                f"market momentum slows. Immediate overhead resistance poses a false breakout trap if volume falters."
+                f"Net analyst signal {net:+.2f} for {symbol}. "
+                f"Weakest pillar: {weakest[0]} at {weakest[1]:+.2f}."
             ),
             "risk_triggers": [
-                "Overhead technical resistance cluster creating supply overhang.",
-                "Potential raw material input inflation dampening operating margins.",
-                "Global yield spikes that could trigger sudden foreign institutional profit-taking.",
-            ],
+                f"{k} drags at {v:+.2f}" for k, v in zip(
+                    ("fundamentals", "technicals", "sentiment", "macro"), signals
+                ) if v < -0.1
+            ] or ["No clear negative contributors — bear case is weak."],
             "llm_argument": llm_argument,
         }

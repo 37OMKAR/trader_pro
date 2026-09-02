@@ -1,0 +1,23 @@
+name: trading.tick_and_reflect
+version: 1.0.0
+description: >
+  Advance the paper-trading world forward by up to N daily bars, firing
+  stop-losses and profit-targets against real historical OHLC. Returns closed trades.
+inputs:
+  type: object
+  properties:
+    lookahead_days: { type: integer, minimum: 1, maximum: 60, default: 30 }
+outputs:
+  type: object
+  properties:
+    status: { type: string }
+    exits_recorded: { type: array }
+    positions_remaining: { type: integer }
+handler:
+  type: http
+  method: POST
+  url: "${HERMES_SKILL_BASE}/skills/trading/tick_and_reflect"
+  headers:
+    Authorization: "Bearer ${HERMES_SKILL_TOKEN}"
+    Content-Type: "application/json"
+  timeout_seconds: 120

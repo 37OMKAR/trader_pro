@@ -1,0 +1,67 @@
+# Governance / runtime control skills. Combined in one file — they share auth and error shape.
+
+- name: trading.ops_health
+  version: 1.0.0
+  description: Return the runtime state (kill switch, budgets, quarantines, positions open).
+  inputs: { type: object, properties: {} }
+  outputs:
+    type: object
+    properties:
+      status: { type: string }
+      runtime: { type: object }
+      budget: { type: object }
+      positions_open: { type: integer }
+      quarantined: { type: object }
+  handler:
+    type: http
+    method: GET
+    url: "${HERMES_SKILL_BASE}/skills/trading/ops/health"
+    headers: { Authorization: "Bearer ${HERMES_SKILL_TOKEN}" }
+    timeout_seconds: 10
+
+- name: trading.ops_pause
+  version: 1.0.0
+  description: Pause all order placement. Position tick keeps running (protects open stops).
+  inputs:
+    type: object
+    properties: { reason: { type: string } }
+  outputs:
+    type: object
+    properties: { status: { type: string }, reason: { type: string } }
+  handler:
+    type: http
+    method: POST
+    url: "${HERMES_SKILL_BASE}/skills/trading/ops/pause"
+    query: { reason: "{{inputs.reason}}" }
+    headers: { Authorization: "Bearer ${HERMES_SKILL_TOKEN}" }
+    timeout_seconds: 10
+
+- name: trading.ops_resume
+  version: 1.0.0
+  description: Clear pause/halt and resume normal operation.
+  inputs: { type: object, properties: {} }
+  outputs: { type: object, properties: { status: { type: string } } }
+  handler:
+    type: http
+    method: POST
+    url: "${HERMES_SKILL_BASE}/skills/trading/ops/resume"
+    headers: { Authorization: "Bearer ${HERMES_SKILL_TOKEN}" }
+    timeout_seconds: 10
+
+- name: trading.ops_halt
+  version: 1.0.0
+  description: Hard halt — no new orders. Manual reset only.
+  inputs:
+    type: object
+    properties: { reason: { type: string } }
+    required: [reason]
+  outputs:
+    type: object
+    properties: { status: { type: string }, reason: { type: string } }
+  handler:
+    type: http
+    method: POST
+    url: "${HERMES_SKILL_BASE}/skills/trading/ops/halt"
+    query: { reason: "{{inputs.reason}}" }
+    headers: { Authorization: "Bearer ${HERMES_SKILL_TOKEN}" }
+    timeout_seconds: 10

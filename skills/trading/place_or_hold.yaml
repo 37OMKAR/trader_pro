@@ -1,0 +1,31 @@
+name: trading.place_or_hold
+version: 1.0.0
+description: >
+  Route an order request through the Portfolio Manager. The PM may APPROVE, RESIZE
+  (fill less than requested), or REJECT (with a specific reason). Kill switch, sector
+  caps, position caps, and daily loss budget are enforced firm-side.
+inputs:
+  type: object
+  properties:
+    symbol: { type: string }
+    action: { type: string, enum: [BUY, SELL] }
+    quantity: { type: integer, minimum: 1 }
+    entry_price: { type: number, minimum: 0.01 }
+    stop_loss: { type: number }
+    target: { type: number }
+  required: [symbol, action, quantity, entry_price]
+outputs:
+  type: object
+  properties:
+    status: { type: string }
+    decision: { type: object }
+    fill: { type: object }
+    reason: { type: string }
+handler:
+  type: http
+  method: POST
+  url: "${HERMES_SKILL_BASE}/skills/trading/place_or_hold"
+  headers:
+    Authorization: "Bearer ${HERMES_SKILL_TOKEN}"
+    Content-Type: "application/json"
+  timeout_seconds: 30

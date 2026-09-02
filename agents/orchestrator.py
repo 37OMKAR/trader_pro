@@ -14,6 +14,7 @@ from agents.analysts import (
 )
 from agents.researchers import BullishResearcherAgent, BearishResearcherAgent
 from agents.execution import TraderAgent, RiskManagementAgent, PortfolioManagerAgent
+from agents.indicators import atr as compute_atr
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
 
 
@@ -50,14 +51,19 @@ class TradingFirmOrchestrator:
 
         # Step 1: Fetch real-time market quote and historical data
         quote = await self.market_provider.get_quote(symbol)
-        candles = await self.market_provider.get_history(symbol, timeframe="1D", limit=30)
+        candles = await self.market_provider.get_history(symbol, timeframe="1D", limit=240)
+        try:
+            bench = await self.market_provider.get_history("NIFTY", timeframe="1D", limit=120)
+        except Exception:
+            bench = []
         quote_dict = quote.model_dump()
+        symbol_atr = compute_atr(candles, 14)
 
-        # Step 2: Analyst Team Runs (in parallel)
-        fund_task = self.fundamentals_analyst.analyze(symbol, quote_dict)
+        # Step 2: Analyst Team Runs (in parallel, all fed real candles now)
+        fund_task = self.fundamentals_analyst.analyze(symbol, quote_dict, candles)
         tech_task = self.technical_analyst.analyze(symbol, quote_dict, candles)
-        sent_task = self.sentiment_analyst.analyze(symbol)
-        macro_task = self.news_macro_analyst.analyze(symbol)
+        sent_task = self.sentiment_analyst.analyze(symbol, quote_dict, candles)
+        macro_task = self.news_macro_analyst.analyze(symbol, bench)
 
         fund_rep, tech_rep, sent_rep, macro_rep = await asyncio.gather(
             fund_task, tech_task, sent_task, macro_task
@@ -75,13 +81,14 @@ class TradingFirmOrchestrator:
         bear_task = self.bear_researcher.argue(symbol, analyst_reports)
         bull_case, bear_case = await asyncio.gather(bull_task, bear_task)
 
-        # Step 4: Trader Agent Decision
+        # Step 4: Trader Agent Decision (ATR-sized, direction from signal aggregation)
         trade_proposal = await self.trader.decide_trade(
             symbol=symbol,
             current_price=quote.last_price,
             analyst_reports=analyst_reports,
             bull_case=bull_case,
             bear_case=bear_case,
+            atr=symbol_atr,
         )
 
         # Step 5: Risk Manager Audit
