@@ -1,11 +1,28 @@
-Price ₹1843.33 is trading above all key moving averages (20/50/200 DMA) in a bullish golden alignment. RSI at 62.4 confirms healthy upward momentum with immediate resistance at ₹1907.85.
+Price ₹1840.03 is trading above all key moving averages (20/50/200 DMA) in a bullish golden alignment. RSI at 62.4 confirms healthy upward momentum with immediate resistance at ₹1904.43.
 
-1. Trend Direction: The trend is bullish as the last traded price is above all key moving averages (20-DMA, 50-DMA, 200-DMA), and the 20-DMA has crossed above the 50-DMA, indicating a short-term uptrend. The RSI at 62.4 also suggests healthy momentum without being overbought.
+Based on the technical data provided for INFY, here is the institutional-level analysis:
 
-2. Breakout or Consolidation status: INFY is currently in a consolidation phase, trading between the key support at ₹1797.25 and key resistance at ₹1907.85. A breakout above ₹1907.85 could signal a continuation of the uptrend, while a breakdown below ₹1797.25 might indicate a trend reversal or further consolidation.
+### 1. Trend Direction: **Bullish (Strong Uptrend)**
+- **Golden Alignment:** The SMA stack is perfectly bullish: Price (₹1840) > 20-DMA (₹1812) > 50-DMA (₹1775) > 200-DMA (₹1692). This confirms a long-term and short-term uptrend.
+- **Momentum:** RSI at 62.4 indicates strong buying interest without being in the overbought zone (>70), leaving room for further upside before a pullback risk.
+- **Distance from 200-DMA:** Trading ~8.7% above the 200-DMA suggests the stock is in a mature leg of the uptrend but not yet extremely stretched.
 
-3. Entry & Stop-loss zones:
-- Long Entry: A bullish entry can be considered if INFY breaks out above the key resistance at ₹1907.85 with a stop-loss just below the recent swing low or key support at ₹1797.25.
-- Short Entry: A bearish entry is not recommended at this time as the overall trend is bullish, and the RSI is not in the overbought territory.
+### 2. Breakout or Consolidation Status: **Consolidation within a Bullish Range (Pre-Breakout)**
+- The stock is currently trading **below the immediate resistance** at ₹1904.43 but **well above** the 20-DMA support.
+- **Action:** It is coiling between the support zone (₹1794–₹1812) and resistance (₹1904). This is a **bullish consolidation** phase. A decisive daily close above ₹1904.43 would trigger a breakout, opening the door to the next resistance at ₹1950.43.
 
-For risk management, it's essential to maintain a stop-loss order to limit potential losses in case the trade moves against the expected direction. The stop-loss can be placed at a level that aligns with the trader's risk tolerance and the stock's recent price action.
+### 3. Entry & Stop-Loss Zones
+
+**Scenario A: Aggressive (Breakout Confirmation)**
+- **Entry:** Buy above **₹1905** (intraday or closing basis) to confirm the breakout.
+- **Stop-Loss:** Place a strict stop at **₹1875** (below the breakout candle's low or recent swing high).
+- **Target:** ₹1950 (Resistance 2).
+
+**Scenario B: Conservative (Buy-the-Dip)**
+- **Entry:** Accumulate in the **₹1795 – ₹1812** zone (Support 1 + 20-DMA confluence). This offers a favorable risk-reward ratio.
+- **Stop-Loss:** Place a stop below **₹1745** (below Support 2 at ₹1748) to avoid getting caught in a deeper correction.
+- **Target:** ₹1904 (Resistance 1) initially, followed by ₹1950.
+
+**Risk Management Note:** 
+- If you are a swing trader, the 20-DMA (₹1812) is the immediate invalidation point for the short-term trend. 
+- **Caution:** Given the RSI is at 62.4, avoid chasing prices above ₹1904 without a volume spike. If the stock fails to break ₹1904 on the first attempt and pulls back, the dip-buying strategy (Scenario B) is safer.
