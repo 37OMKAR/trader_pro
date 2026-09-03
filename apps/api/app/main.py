@@ -5,8 +5,18 @@ Production-ready backend with REST APIs, WebSockets, background tick simulation,
 
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load real API keys from the operator's .env — first this worktree, then the
+# main repo checkout as a fallback so worktrees inherit configured providers.
+load_dotenv()
+_main_env = Path("D:/antigravity/sharemarkt/.env")
+if _main_env.exists():
+    load_dotenv(_main_env, override=False)
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 

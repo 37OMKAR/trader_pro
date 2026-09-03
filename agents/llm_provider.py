@@ -33,26 +33,32 @@ class LLMClient:
 
     async def generate(self, system_prompt: str, user_prompt: str, temperature: float = 0.3) -> str:
         """Dispatches prompt with automatic fallback across LongCat, OpenRouter Hermes, and DeepSeek."""
-        # 1. Direct LongCat AI API
-        if self.longcat_key and (self.provider == "longcat" or not self.openrouter_key):
+        # Autonomous local-only mode: short-circuit every external call and use
+        # the deterministic institutional synthesizer so the trading firm can
+        # deliberate continuously without hitting billed API quotas.
+        if os.getenv("MARKET_AI_LOCAL_ONLY", "").lower() in ("1", "true", "yes", "on"):
+            return self._generate_local_reasoning(system_prompt, user_prompt)
+
+        # 1. DeepSeek (fast, working key for this operator)
+        if self.deepseek_key and self.provider != "openrouter_force":
+            try:
+                return await self._call_deepseek(system_prompt, user_prompt, temperature)
+            except Exception as e:
+                logger.warning(f"DeepSeek API call failed: {e}. Trying LongCat...")
+
+        # 2. Direct LongCat AI API
+        if self.longcat_key:
             try:
                 return await self._call_longcat(system_prompt, user_prompt, temperature)
             except Exception as e:
                 logger.warning(f"LongCat API call failed: {e}. Trying OpenRouter Hermes...")
 
-        # 2. OpenRouter (Hermes-3 Brain)
+        # 3. OpenRouter (Hermes-3 Brain) — last resort, currently 402
         if self.openrouter_key:
             try:
                 return await self._call_openrouter(system_prompt, user_prompt, temperature)
             except Exception as e:
-                logger.warning(f"OpenRouter/Hermes API call failed: {e}. Trying DeepSeek...")
-
-        # 3. DeepSeek API
-        if self.deepseek_key:
-            try:
-                return await self._call_deepseek(system_prompt, user_prompt, temperature)
-            except Exception as e:
-                logger.warning(f"DeepSeek API call failed: {e}. Trying Gemini/OpenAI...")
+                logger.warning(f"OpenRouter/Hermes API call failed: {e}. Falling to local synthesizer...")
 
         # 4. LongCat Fallback
         if self.longcat_key:

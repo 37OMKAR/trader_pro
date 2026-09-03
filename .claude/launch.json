@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "market-ai-api",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "apps.api.app.main:app", "--port", "8000", "--host", "127.0.0.1"],
+      "port": 8000,
+      "url": "http://127.0.0.1:8000",
+      "env": {
+        "MARKET_AI_LOCAL_ONLY": "1"
+      }
+    },
+    {
+      "name": "market-ai-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--workspace=apps/web"],
+      "port": 3000,
+      "url": "http://localhost:3000"
+    }
+  ]
+}

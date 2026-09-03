@@ -1,128 +1,152 @@
 "use client";
 
 import React from "react";
-import {
-  TrendingUp,
-  LayoutDashboard,
-  Layers,
-  Zap,
-  Cpu,
-  FlaskConical,
-  Briefcase,
-  ShieldAlert,
-  GraduationCap,
-  Settings,
-  Flame,
-  PieChart,
-  Trophy,
-  Users,
-  Bell,
-  Wallet,
-  Send,
-  Globe,
-} from "lucide-react";
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
 
+type Item = { id: string; label: string; hint?: string };
+
+const TIERS: { key: string; roman: string; title: string; promise: string; items: Item[] }[] = [
+  {
+    key: "watch",
+    roman: "I",
+    title: "Watch",
+    promise: "What the firm is doing right now, and the market it's doing it in.",
+    items: [
+      { id: "suite",       label: "The Suite · live floor",  hint: "all agents · live" },
+      { id: "overview",    label: "The Firm · front page",   hint: "today's lead + ledger" },
+      { id: "indices",     label: "Indices",                 hint: "NIFTY · SENSEX · BANK" },
+      { id: "stocks",      label: "Equities",                hint: "large-cap universe" },
+      { id: "sectors",     label: "Sectors & heatmap" },
+      { id: "derivatives", label: "F&O derivatives" },
+    ],
+  },
+  {
+    key: "learn",
+    roman: "II",
+    title: "Learn",
+    promise: "Understand every decision. Read the debates and the reasoning.",
+    items: [
+      { id: "agentactivity", label: "Agent conversations",   hint: "5-stage transcripts" },
+      { id: "predictions",   label: "AI predictions" },
+      { id: "research",      label: "Web research",          hint: "TinyFish" },
+      { id: "skills",        label: "Hermes skills matrix" },
+      { id: "tutor",         label: "Market tutor" },
+      { id: "avatar",        label: "Talking avatar",        hint: "spoken briefing" },
+    ],
+  },
+  {
+    key: "trade",
+    roman: "III",
+    title: "Trade",
+    promise: "The paper fund the firm is trading. Your intervention lives here.",
+    items: [
+      { id: "paper",       label: "Paper portfolio" },
+      { id: "risk",        label: "Portfolio risk" },
+      { id: "strategies",  label: "Strategy lab" },
+      { id: "tournaments", label: "Strategy tournaments" },
+      { id: "alerts",      label: "Alerts" },
+      { id: "telegram",    label: "Telegram" },
+    ],
+  },
+];
+
 export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
-  const navSections = [
-    {
-      title: "MARKET",
-      items: [
-        { id: "overview", label: "Overview", icon: LayoutDashboard },
-        { id: "indices", label: "Indices", icon: TrendingUp },
-        { id: "stocks", label: "Equities", icon: Layers },
-        { id: "derivatives", label: "F&O Derivatives", icon: Flame },
-        { id: "sectors", label: "Sectors & Heatmap", icon: PieChart },
-      ],
-    },
-    {
-      title: "AI & QUANT",
-      items: [
-        { id: "predictions", label: "AI Predictions", icon: Cpu },
-        { id: "agentactivity", label: "Hermes Agent Hub", icon: Users },
-        { id: "research", label: "Web Research (TinyFish)", icon: Globe },
-        { id: "skills", label: "Hermes Skills Matrix", icon: Zap },
-        { id: "avatar", label: "Talking Avatar Studio", icon: Flame },
-        { id: "tournaments", label: "Strategy Tournaments", icon: Trophy },
-        { id: "strategylab", label: "Strategy Lab", icon: FlaskConical },
-      ],
-    },
-    {
-      title: "PORTFOLIO & EXECUTION",
-      items: [
-        { id: "paper", label: "Paper Trading", icon: Wallet },
-        { id: "risk", label: "Portfolio Risk & VaR", icon: ShieldAlert },
-        { id: "alerts", label: "Alert Engine", icon: Bell },
-        { id: "telegram", label: "Telegram Bot Alerts", icon: Send },
-        { id: "tutor", label: "AI Market Tutor", icon: GraduationCap },
-      ],
-    },
-    {
-      title: "SYSTEM",
-      items: [
-        { id: "settings", label: "Settings & APIs", icon: Settings },
-      ],
-    },
-  ];
-
   return (
-    <aside className="w-64 bg-[#090d16] border-r border-[#1e293b] flex flex-col h-screen shrink-0 select-none">
-      {/* Brand Header */}
-      <div className="h-16 px-5 border-b border-[#1e293b] flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-cyan-500 to-emerald-400 flex items-center justify-center font-bold text-black text-sm shadow-glow-cyan">
-          AI
-        </div>
-        <div>
-          <div className="font-bold tracking-wider text-sm text-white flex items-center gap-1.5">
-            MARKET AI <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">INDIA</span>
-          </div>
-          <div className="text-[11px] text-[#64748b] font-mono">INSTITUTIONAL v1.0</div>
+    <aside
+      className="h-screen sticky top-0 overflow-y-auto"
+      style={{
+        width: 300,
+        background: "var(--paper)",
+        borderRight: "1px solid var(--rule-strong)",
+        padding: "28px 24px",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Masthead */}
+      <div style={{ borderBottom: "3px double var(--rule-strong)", paddingBottom: 16 }}>
+        <div className="eyebrow">Vol. III · Session live</div>
+        <div className="serif" style={{ fontSize: 44, lineHeight: 0.95, marginTop: 4 }}>The Firm</div>
+        <div className="serif" style={{ fontSize: 14, fontStyle: "italic", color: "var(--ink-subtle)", marginTop: 2 }}>
+          a daily register of what the machines decided
         </div>
       </div>
 
-      {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        {navSections.map((sec) => (
-          <div key={sec.title}>
-            <div className="px-3 text-[11px] font-semibold text-[#475569] tracking-wider uppercase mb-1.5">
-              {sec.title}
-            </div>
-            <div className="space-y-0.5">
-              {sec.items.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
+      {/* Tiers */}
+      {TIERS.map((tier) => (
+        <div key={tier.key} style={{ marginTop: 24 }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <span className="serif" style={{ fontSize: 22, color: "var(--accent)", lineHeight: 1 }}>{tier.roman}.</span>
+            <span className="serif" style={{ fontSize: 22, lineHeight: 1 }}>{tier.title}</span>
+          </div>
+          <div style={{ fontSize: 11, color: "var(--ink-subtle)", marginTop: 4, lineHeight: 1.4 }}>
+            {tier.promise}
+          </div>
+
+          <ul style={{ margin: "10px 0 0 0", padding: 0, listStyle: "none" }}>
+            {tier.items.map((item) => {
+              const active = activeTab === item.id;
+              return (
+                <li key={item.id}>
                   <button
-                    key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-xs font-medium transition-all ${
-                      isActive
-                        ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-sm"
-                        : "text-[#94a3b8] hover:text-white hover:bg-[#151b2c]"
-                    }`}
+                    className="w-full text-left"
+                    style={{
+                      padding: "8px 10px",
+                      margin: "1px 0",
+                      background: active ? "var(--ink)" : "transparent",
+                      color: active ? "var(--paper)" : "var(--ink)",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      fontSize: 13,
+                      display: "flex",
+                      alignItems: "baseline",
+                      justifyContent: "space-between",
+                      gap: 8,
+                    }}
                   >
-                    <Icon className={`w-4 h-4 ${isActive ? "text-cyan-400" : "text-[#64748b]"}`} />
-                    <span>{item.label}</span>
+                    <span style={{ fontWeight: active ? 600 : 500 }}>{item.label}</span>
+                    {item.hint && (
+                      <span
+                        className="mono"
+                        style={{
+                          fontSize: 9,
+                          color: active ? "rgba(244,239,228,0.65)" : "var(--ink-subtle)",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        {item.hint}
+                      </span>
+                    )}
                   </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
 
-      {/* Bottom User / Engine Status */}
-      <div className="p-3 border-t border-[#1e293b] bg-[#070a10]">
-        <div className="p-2.5 rounded-lg bg-[#0e131f] border border-[#1e293b]/70 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 pulse-active shadow-glow-green" />
-            <span className="text-[11px] text-[#94a3b8] font-mono">HERMES CORE</span>
+      {/* Footer */}
+      <div style={{ marginTop: 32, paddingTop: 16, borderTop: "1px solid var(--rule-strong)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
+              className="pulse-active"
+              style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--accent)", display: "inline-block" }}
+            />
+            <span style={{ fontSize: 12 }}>Hermes core</span>
           </div>
-          <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-mono font-medium">READY</span>
+          <span className="mono" style={{ fontSize: 10, color: "var(--accent)", fontWeight: 700, letterSpacing: "0.14em" }}>
+            LIVE
+          </span>
+        </div>
+        <div style={{ fontSize: 10, color: "var(--ink-subtle)", marginTop: 6, lineHeight: 1.4 }}>
+          Autonomous daemon cycling the large-cap universe · one deliberation every ~2 min.
         </div>
       </div>
     </aside>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Clock, Radio, Activity, AlertCircle, RefreshCw, Send, Video, Zap } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { MarketStatusResponse, IndexQuote } from "@/types";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
@@ -15,90 +15,88 @@ interface TopBarProps {
   onOpenSkills?: () => void;
 }
 
-export function TopBar({ 
-  status, 
-  indices, 
-  isConnected, 
-  onRefresh,
-  onOpenTelegram,
-  onOpenAvatar,
-  onOpenSkills
-}: TopBarProps) {
+export function TopBar({ status, indices, isConnected, onRefresh }: TopBarProps) {
   const [istTime, setIstTime] = useState<string>("");
 
   useEffect(() => {
-    const updateTime = () => {
+    const update = () => {
       const now = new Date();
-      // Format to IST
-      const options: Intl.DateTimeFormatOptions = {
+      const t = new Intl.DateTimeFormat("en-GB", {
         timeZone: "Asia/Kolkata",
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
         hour12: false,
-      };
-      const timeStr = new Intl.DateTimeFormat("en-GB", options).format(now);
-      const dateStr = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" }).format(now);
-      setIstTime(`${dateStr} ${timeStr} IST`);
+      }).format(now);
+      const d = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Kolkata",
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(now);
+      setIstTime(`${d} · ${t} IST`);
     };
-
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
+    update();
+    const i = setInterval(update, 1000);
+    return () => clearInterval(i);
   }, []);
 
-  const getStatusBadge = () => {
-    if (!status) return null;
-    const isTrading = status.status === "OPEN" || status.status === "SPECIAL_SESSION";
-    const isPre = status.status === "PRE_OPEN";
-    
-    if (isTrading) {
-      return (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold font-mono">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 pulse-active shadow-glow-green" />
-          <span>MARKET LIVE</span>
-        </div>
-      );
-    }
-
-    if (isPre) {
-      return (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold font-mono">
-          <span className="w-2 h-2 rounded-full bg-amber-400 pulse-active" />
-          <span>PRE-OPEN</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-semibold font-mono">
-        <span className="w-2 h-2 rounded-full bg-rose-400" />
-        <span>CLOSED ({status.status})</span>
-      </div>
-    );
-  };
+  const statusLabel = (() => {
+    if (!status) return "…";
+    if (status.status === "OPEN" || status.status === "SPECIAL_SESSION") return "MARKET OPEN";
+    if (status.status === "PRE_OPEN") return "PRE-OPEN";
+    return "CLOSED";
+  })();
 
   return (
-    <header className="h-16 border-b border-[#1e293b] bg-[#090d16]/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
-      {/* Left: Market Status & Live Clock */}
-      <div className="flex items-center gap-4">
-        {getStatusBadge()}
-
-        <div className="flex items-center gap-2 text-xs font-mono text-[#94a3b8] bg-[#0e131f] px-3 py-1 rounded border border-[#1e293b]">
-          <Clock className="w-3.5 h-3.5 text-cyan-400" />
-          <span>{istTime || "Loading IST..."}</span>
+    <header
+      style={{
+        height: 56,
+        borderBottom: "1px solid var(--rule-strong)",
+        background: "var(--paper)",
+        padding: "0 28px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexShrink: 0,
+        zIndex: 20,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "3px 10px",
+            border: "1px solid var(--rule-strong)",
+          }}
+        >
+          <span
+            className={statusLabel !== "CLOSED" ? "pulse-active" : ""}
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: statusLabel === "MARKET OPEN" ? "var(--gain)" : statusLabel === "CLOSED" ? "var(--loss)" : "var(--accent)",
+              display: "inline-block",
+            }}
+          />
+          <span className="mono" style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.10em" }}>
+            {statusLabel}
+          </span>
         </div>
+        <span className="mono" style={{ fontSize: 11, color: "var(--ink-subtle)" }}>{istTime}</span>
       </div>
 
-      {/* Center: Live Scrolling Ticker Ribbon */}
-      <div className="hidden lg:flex items-center gap-6 overflow-hidden max-w-2xl">
-        {indices.map((idx) => {
-          const isUp = idx.change >= 0;
+      <div style={{ display: "flex", alignItems: "center", gap: 24, overflow: "hidden", maxWidth: 720 }}>
+        {indices.slice(0, 4).map((idx) => {
+          const up = idx.change >= 0;
           return (
-            <div key={idx.symbol} className="flex items-center gap-2 text-xs shrink-0 font-mono">
-              <span className="text-[#64748b] font-semibold">{idx.symbol}</span>
-              <span className="text-white font-medium">{formatNumber(idx.current_value)}</span>
-              <span className={`font-semibold ${isUp ? "text-emerald-400" : "text-rose-400"}`}>
+            <div key={idx.symbol} className="mono" style={{ fontSize: 11, display: "flex", gap: 6, alignItems: "baseline", flexShrink: 0 }}>
+              <span style={{ color: "var(--ink-subtle)", fontWeight: 600 }}>{idx.symbol}</span>
+              <span style={{ color: "var(--ink)" }}>{formatNumber(idx.current_value)}</span>
+              <span style={{ color: up ? "var(--gain)" : "var(--loss)", fontWeight: 600 }}>
                 {formatPercent(idx.percent_change)}
               </span>
             </div>
@@ -106,52 +104,22 @@ export function TopBar({
         })}
       </div>
 
-      {/* Right: Quick Action Launchers & Live Status */}
-      <div className="flex items-center gap-3">
-        {onOpenTelegram && (
-          <button
-            onClick={onOpenTelegram}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0284c7]/20 hover:bg-[#0284c7]/30 text-sky-400 border border-sky-500/30 text-xs font-medium transition"
-            title="Open Telegram Alert Bot"
-          >
-            <Send className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Telegram Bot</span>
-          </button>
-        )}
-
-        {onOpenAvatar && (
-          <button
-            onClick={onOpenAvatar}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#a855f7]/20 hover:bg-[#a855f7]/30 text-purple-400 border border-purple-500/30 text-xs font-medium transition"
-            title="Open Talking Avatar Studio"
-          >
-            <Video className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Avatar Studio</span>
-          </button>
-        )}
-
-        {onOpenSkills && (
-          <button
-            onClick={onOpenSkills}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#eab308]/20 hover:bg-[#eab308]/30 text-amber-400 border border-amber-500/30 text-xs font-medium transition"
-            title="Open Hermes Skills Matrix"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Skills Matrix</span>
-          </button>
-        )}
-
-        <div className="flex items-center gap-1.5 text-[11px] font-mono text-[#64748b] ml-2">
-          <Radio className={`w-3.5 h-3.5 ${isConnected ? "text-emerald-400 pulse-active" : "text-amber-400"}`} />
-          <span>{isConnected ? "WS STREAM" : "HTTP"}</span>
-        </div>
-
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <span className="mono" style={{ fontSize: 10, color: isConnected ? "var(--gain)" : "var(--ink-subtle)", letterSpacing: "0.10em" }}>
+          {isConnected ? "WS · LIVE" : "HTTP"}
+        </span>
         <button
           onClick={onRefresh}
-          className="p-1.5 rounded bg-[#151b2c] hover:bg-[#1e293b] text-[#94a3b8] hover:text-white border border-[#1e293b] transition"
-          title="Refresh Data"
+          style={{
+            padding: "6px 8px",
+            background: "var(--paper)",
+            border: "1px solid var(--rule-strong)",
+            color: "var(--ink)",
+            cursor: "pointer",
+          }}
+          title="Refresh"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
+          <RefreshCw style={{ width: 14, height: 14 }} />
         </button>
       </div>
     </header>

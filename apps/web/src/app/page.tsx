@@ -24,6 +24,8 @@ import { MarketTutorView } from "@/components/MarketTutorView";
 import { HermesSkillsView } from "@/components/HermesSkillsView";
 import { TalkingAvatarStudio } from "@/components/TalkingAvatarStudio";
 import { TelegramConnectorModal } from "@/components/TelegramConnectorModal";
+import { FrontPage } from "@/components/FrontPage";
+import { FirmSuite } from "@/components/FirmSuite";
 import { MarketAPI } from "@/lib/api";
 import {
   MarketStatusResponse,
@@ -37,7 +39,7 @@ import {
 } from "@/types";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<string>("overview");
+  const [activeTab, setActiveTab] = useState<string>("suite");
   const [selectedSymbol, setSelectedSymbol] = useState<string>("NIFTY 50");
   const [timeframe, setTimeframe] = useState<string>("1D");
   const [modalStock, setModalStock] = useState<string | null>(null);
@@ -180,13 +182,13 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#06090e] terminal-grid">
-      {/* Institutional Sidebar */}
+    <div className="flex h-screen w-screen overflow-hidden" style={{ background: "var(--paper)" }}>
+      {/* Sidebar · Watch / Learn / Trade tiers */}
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Main Terminal Viewport */}
+      {/* Main viewport */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        {/* Top Header Bar */}
+        {/* Top Header Bar (kept for indices ticker + refresh) */}
         <TopBar
           status={status}
           indices={indices}
@@ -244,17 +246,22 @@ export default function Home() {
             />
           )}
 
-          {/* TAB: Overview */}
+          {/* TAB: The Suite — live floor with all agents, discussions, orders */}
+          {activeTab === "suite" && <FirmSuite />}
+
+          {/* TAB: Overview — The Firm front page */}
           {activeTab === "overview" && (
+            <FrontPage onOpenAgentHub={() => setActiveTab("suite")} />
+          )}
+
+          {/* TAB: Indices (chart + regime + breadth) */}
+          {activeTab === "indices" && (
             <>
-              {/* 1. Benchmark Index Cards */}
               <IndexSummaryCards
                 indices={indices}
                 selectedSymbol={selectedSymbol}
                 onSelectIndex={(sym) => setSelectedSymbol(sym)}
               />
-
-              {/* 2. Primary Chart & Regime Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 <div className="lg:col-span-2">
                   <InteractiveChart
@@ -270,24 +277,25 @@ export default function Home() {
                   <MarketBreadthCard breadth={breadth} />
                 </div>
               </div>
-
-              {/* 3. Secondary Analytics: FII/DII, Sectors, and Movers */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <FiiDiiCard fiiDii={fiiDii} />
                 <div className="md:col-span-2">
                   <SectorHeatmap sectors={sectors} />
                 </div>
               </div>
-
-              {/* 4. Top Equities Movers */}
-              <TopMoversTable
-                stocks={stocks}
-                onSelectStock={(sym) => {
-                  setModalStock(sym);
-                }}
-              />
             </>
           )}
+
+          {/* TAB: Equities (top movers) */}
+          {activeTab === "stocks" && (
+            <TopMoversTable
+              stocks={stocks}
+              onSelectStock={(sym) => setModalStock(sym)}
+            />
+          )}
+
+          {/* TAB: Sectors */}
+          {activeTab === "sectors" && <SectorHeatmap sectors={sectors} />}
         </main>
       </div>
 
