@@ -42,7 +42,7 @@ export function PaperTradingView() {
         quantity: Number(quantity),
         order_type: orderType,
       });
-      setOrderMsg({ type: "success", text: res.message || "Order filled successfully!" });
+      setOrderMsg({ type: "success", text: (res as { message?: string }).message || "Order filled successfully!" });
       loadAccount();
     } catch (err: any) {
       setOrderMsg({ type: "error", text: err.message || "Failed to execute order." });

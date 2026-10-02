@@ -28,6 +28,8 @@ sdist/
 var/
 wheels/
 share/python-wheels/
+!apps/web/src/lib/
+!apps/web/src/lib/**
 *.egg-info/
 .installed.cfg
 *.egg
