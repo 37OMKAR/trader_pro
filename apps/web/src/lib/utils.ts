@@ -39,15 +39,21 @@ export function formatNumber(
   }).format(value);
 }
 
-/** Format a decimal (e.g. 1.42 or 0.0142) as a percentage. Values >= 1 or <= -1 are treated as already-percent. */
+/**
+ * Format a value already expressed in percent (e.g. 1.42 → "+1.42%").
+ *
+ * The backend returns `percent_change` fields in percent units — the earlier
+ * heuristic that rescaled values in [-1, 1] turned a real 0.91% move into a
+ * fake "+91.00%". That heuristic is gone; callers that genuinely hold a
+ * fraction should multiply by 100 themselves.
+ */
 export function formatPercent(
   value: number | null | undefined,
   maximumFractionDigits = 2,
 ): string {
   if (value === null || value === undefined || Number.isNaN(value)) return "—";
-  const asPct = Math.abs(value) <= 1 ? value * 100 : value;
-  const sign = asPct > 0 ? "+" : "";
-  return `${sign}${asPct.toFixed(maximumFractionDigits)}%`;
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${value.toFixed(maximumFractionDigits)}%`;
 }
 
 /** Tiny classnames helper. */

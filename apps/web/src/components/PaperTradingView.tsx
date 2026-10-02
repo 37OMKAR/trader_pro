@@ -286,14 +286,14 @@ export function PaperTradingView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#1e293b]/50">
-                  {account?.positions?.length === 0 ? (
+                  {!account?.positions?.length ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-[#64748b]">
                         No active open positions. Place an order to build your virtual portfolio.
                       </td>
                     </tr>
                   ) : (
-                    account?.positions?.map((pos: any) => {
+                    account.positions.map((pos: any) => {
                       const isPosProfit = pos.unrealized_pnl >= 0;
                       return (
                         <tr key={pos.symbol} className="hover:bg-[#0e131f] transition">
@@ -322,10 +322,10 @@ export function PaperTradingView() {
             </div>
 
             <div className="max-h-52 overflow-y-auto space-y-1.5">
-              {account?.trade_history?.length === 0 ? (
+              {!account?.trade_history?.length ? (
                 <div className="text-center py-6 text-[#64748b]">No executed orders yet.</div>
               ) : (
-                account?.trade_history?.map((trade: any, idx: number) => {
+                account.trade_history.map((trade: any, idx: number) => {
                   const isBuy = trade.action === "BUY";
                   return (
                     <div

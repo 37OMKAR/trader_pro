@@ -79,23 +79,23 @@ export function TopBar({
   };
 
   return (
-    <header className="h-16 border-b border-[#1e293b] bg-[#090d16]/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20">
+    <header className="h-16 border-b border-[#1e293b] bg-[#090d16]/90 backdrop-blur-md px-6 flex items-center justify-between shrink-0 z-20 gap-4">
       {/* Left: Market Status & Live Clock */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 shrink-0">
         {getStatusBadge()}
 
-        <div className="flex items-center gap-2 text-xs font-mono text-[#94a3b8] bg-[#0e131f] px-3 py-1 rounded border border-[#1e293b]">
-          <Clock className="w-3.5 h-3.5 text-cyan-400" />
-          <span>{istTime || "Loading IST..."}</span>
+        <div className="flex items-center gap-2 text-xs font-mono text-[#94a3b8] bg-[#0e131f] px-3 py-1 rounded border border-[#1e293b] shrink-0">
+          <Clock className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+          <span className="whitespace-nowrap">{istTime || "Loading IST..."}</span>
         </div>
       </div>
 
       {/* Center: Live Scrolling Ticker Ribbon */}
-      <div className="hidden lg:flex items-center gap-6 overflow-hidden max-w-2xl">
+      <div className="hidden lg:flex items-center gap-6 overflow-hidden flex-1 justify-center min-w-0 px-6">
         {indices.map((idx) => {
           const isUp = idx.change >= 0;
           return (
-            <div key={idx.symbol} className="flex items-center gap-2 text-xs shrink-0 font-mono">
+            <div key={idx.symbol} className="flex items-center gap-2 text-xs shrink-0 font-mono whitespace-nowrap">
               <span className="text-[#64748b] font-semibold">{idx.symbol}</span>
               <span className="text-white font-medium">{formatNumber(idx.current_value)}</span>
               <span className={`font-semibold ${isUp ? "text-emerald-400" : "text-rose-400"}`}>
@@ -107,37 +107,37 @@ export function TopBar({
       </div>
 
       {/* Right: Quick Action Launchers & Live Status */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 shrink-0">
         {onOpenTelegram && (
           <button
             onClick={onOpenTelegram}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0284c7]/20 hover:bg-[#0284c7]/30 text-sky-400 border border-sky-500/30 text-xs font-medium transition"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#151b2c] hover:bg-[#1e293b] text-[#94a3b8] hover:text-white border border-[#1e293b] text-xs font-medium transition whitespace-nowrap"
             title="Open Telegram Alert Bot"
           >
-            <Send className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Telegram Bot</span>
+            <Send className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Telegram</span>
           </button>
         )}
 
         {onOpenAvatar && (
           <button
             onClick={onOpenAvatar}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#a855f7]/20 hover:bg-[#a855f7]/30 text-purple-400 border border-purple-500/30 text-xs font-medium transition"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#151b2c] hover:bg-[#1e293b] text-[#94a3b8] hover:text-white border border-[#1e293b] text-xs font-medium transition whitespace-nowrap"
             title="Open Talking Avatar Studio"
           >
-            <Video className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Avatar Studio</span>
+            <Video className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Avatar</span>
           </button>
         )}
 
         {onOpenSkills && (
           <button
             onClick={onOpenSkills}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#eab308]/20 hover:bg-[#eab308]/30 text-amber-400 border border-amber-500/30 text-xs font-medium transition"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#151b2c] hover:bg-[#1e293b] text-[#94a3b8] hover:text-white border border-[#1e293b] text-xs font-medium transition whitespace-nowrap"
             title="Open Hermes Skills Matrix"
           >
-            <Zap className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Skills Matrix</span>
+            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Skills</span>
           </button>
         )}
 

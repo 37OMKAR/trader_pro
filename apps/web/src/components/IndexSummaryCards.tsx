@@ -32,7 +32,9 @@ export function IndexSummaryCards({ indices, selectedSymbol, onSelectIndex }: In
             <div className="flex items-center justify-between mb-2">
               <div>
                 <span className="text-xs font-bold text-white tracking-wide">{idx.symbol}</span>
-                <div className="text-[10px] text-[#64748b] truncate max-w-[120px]">{idx.name}</div>
+                {idx.name && idx.name.trim().toUpperCase() !== idx.symbol.trim().toUpperCase() && (
+                  <div className="text-[10px] text-[#64748b] truncate max-w-[120px]">{idx.name}</div>
+                )}
               </div>
               <div
                 className={`p-1.5 rounded text-xs font-mono font-semibold flex items-center gap-1 ${
