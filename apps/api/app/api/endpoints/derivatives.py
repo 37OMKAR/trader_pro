@@ -3,11 +3,14 @@ Market AI — Option Chain & Derivatives REST Endpoints
 Provides live option chain strike ladders, PCR, Max Pain, and Greeks.
 """
 
+import logging
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Query, HTTPException
 from packages.derivatives_engine.option_chain import OptionChainEngine
 from packages.market_data.yahoo_provider import YahooFinanceMarketDataProvider
 from packages.market_data.development_provider import DevelopmentMarketDataProvider
+
+logger = logging.getLogger("market_ai.derivatives")
 
 router = APIRouter(prefix="/derivatives", tags=["Derivatives & Options"])
 
@@ -31,11 +34,13 @@ async def get_option_chain(
         else:
             dev_quote = await fallback_provider.get_quote(symbol_upper)
             spot_price = dev_quote.last_price
-    except Exception:
+    except Exception as exc:
+        logger.warning("live option-chain spot lookup failed for %s (%s); using dev provider", symbol_upper, exc)
         try:
             dev_quote = await fallback_provider.get_quote(symbol_upper)
             spot_price = dev_quote.last_price
-        except Exception:
+        except Exception as exc2:
+            logger.error("both providers failed for %s option chain (%s); using hard default", symbol_upper, exc2)
             spot_price = 24500.0 if "NIFTY" in symbol_upper else 1500.0
 
     return option_chain_engine.generate_option_chain(

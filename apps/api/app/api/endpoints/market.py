@@ -3,9 +3,12 @@ Market AI — Market Intelligence & Prediction REST Endpoints
 Deterministic calculations from Calendar, Market Data, Feature Engine, Regime Classifier, and ML Models.
 """
 
+import logging
 from datetime import datetime, date
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, Query, HTTPException
+
+logger = logging.getLogger("market_ai.market")
 
 from packages.shared_types.market_types import (
     Quote,
@@ -162,8 +165,8 @@ async def get_stock_predictions(symbol: str, horizon: str = Query("5D", pattern=
     # Record to immutable database registry
     try:
         await PredictionRegistry.record_prediction(prediction)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("prediction registry write failed for %s: %s", symbol, exc)
 
     return prediction
 

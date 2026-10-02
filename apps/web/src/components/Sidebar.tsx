@@ -119,7 +119,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       <div className="p-3 border-t border-[#1e293b] bg-[#070a10]">
         <div className="p-2.5 rounded-lg bg-[#0e131f] border border-[#1e293b]/70 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 pulse-active shadow-glow-green" />
+            <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-glow-green" />
             <span className="text-[11px] text-[#94a3b8] font-mono">HERMES CORE</span>
           </div>
           <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-mono font-medium">READY</span>
