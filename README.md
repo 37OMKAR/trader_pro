@@ -29,7 +29,7 @@ A production-grade monorepo that unifies **live NSE/BSE market data**, **derivat
 
 <br/>
 
-<img src="docs/screenshots/dashboard.svg" alt="Market Dashboard" width="100%"/>
+<img src="docs/screenshots/dashboard-overview.png" alt="Market Dashboard" width="100%"/>
 
 </div>
 
@@ -149,27 +149,57 @@ The platform's crown jewel is **Hermes**, a multi-agent cognitive system that mi
 
 ## UI Preview
 
-> UI mockups shown below — each component is a real `apps/web/src/components/*.tsx` module backed by its FastAPI endpoint.
+> Real 1440×900 captures from the running dashboard against the live FastAPI backend.
 
 ### 🏠 Market Dashboard
-<img src="docs/screenshots/dashboard.svg" alt="Market Dashboard" width="100%"/>
+<img src="docs/screenshots/dashboard-overview.png" alt="Market Dashboard" width="100%"/>
 
-Live indices (NIFTY · SENSEX · BANK NIFTY · INDIA VIX), intraday chart, market breadth A/D, FII/DII flows, sectoral heatmap, and AI-tagged top movers. Backed by [IndexSummaryCards.tsx](apps/web/src/components/IndexSummaryCards.tsx), [MarketBreadthCard.tsx](apps/web/src/components/MarketBreadthCard.tsx), [FiiDiiCard.tsx](apps/web/src/components/FiiDiiCard.tsx), [SectorHeatmap.tsx](apps/web/src/components/SectorHeatmap.tsx), [TopMoversTable.tsx](apps/web/src/components/TopMoversTable.tsx).
+Live NIFTY · SENSEX · BANK NIFTY · FINNIFTY cards with 52-week ranges, intraday chart with SMA overlays, AI Market Regime (bullish, 100% probability), Market Breadth (ADR 1.73, A/D ratio), FII/DII flows (₹6.32 K net), and the Sector Heatmap. Backed by [IndexSummaryCards.tsx](apps/web/src/components/IndexSummaryCards.tsx), [MarketBreadthCard.tsx](apps/web/src/components/MarketBreadthCard.tsx), [FiiDiiCard.tsx](apps/web/src/components/FiiDiiCard.tsx), [SectorHeatmap.tsx](apps/web/src/components/SectorHeatmap.tsx), [TopMoversTable.tsx](apps/web/src/components/TopMoversTable.tsx).
 
 ### 🧠 Hermes 12-Skill Matrix
-<img src="docs/screenshots/hermes-skills.svg" alt="Hermes Skills" width="100%"/>
+<img src="docs/screenshots/dashboard-skills.png" alt="Hermes Skills" width="100%"/>
 
-Live status of all 12 autonomous skills, latency, DoD completion, and one-click re-run. Backed by [HermesSkillsView.tsx](apps/web/src/components/HermesSkillsView.tsx) and the `/skills` router.
+Live Hermes command panel: 12 active skills, ~240 ms average latency, 100% uptime, filterable by category (Technical, Fundamentals, F&O, Macro, Bull/Bear Debate, Kelly Risk, Genetic, …). Backed by [HermesSkillsView.tsx](apps/web/src/components/HermesSkillsView.tsx).
 
-### 📈 Derivatives & Strategy Lab
-<img src="docs/screenshots/derivatives.svg" alt="Derivatives Lab" width="100%"/>
+### 📈 F&O Derivatives
+<img src="docs/screenshots/dashboard-derivatives.png" alt="Derivatives Lab" width="100%"/>
 
-Full option chain with per-strike Greeks, IV, and OI. Natural-language strategy generator produces multi-leg strategies with P&L curves, breakeven, probability, and a 90-day backtest. Backed by [DerivativesView.tsx](apps/web/src/components/DerivativesView.tsx) and [StrategyLabView.tsx](apps/web/src/components/StrategyLabView.tsx).
+Full option chain with per-strike Greeks (delta, gamma, vega, theta, rho), IV, and OI — plus Black-Scholes fair-value and max-pain analytics. Backed by [DerivativesView.tsx](apps/web/src/components/DerivativesView.tsx).
+
+### 🧪 Strategy Lab
+<img src="docs/screenshots/dashboard-strategy.png" alt="Strategy Lab" width="100%"/>
+
+Natural-language strategy generator with templates and 90-day backtest reports. Backed by [StrategyLabView.tsx](apps/web/src/components/StrategyLabView.tsx).
 
 ### 💼 Paper Trading
-<img src="docs/screenshots/paper-trading.svg" alt="Paper Trading" width="100%"/>
+<img src="docs/screenshots/dashboard-paper.png" alt="Paper Trading" width="100%"/>
 
-Portfolio value, available cash, open P&L, AI win-rate, equity curve, quick-order ticket, and open positions with AI exit signals. Backed by [PaperTradingView.tsx](apps/web/src/components/PaperTradingView.tsx).
+Institutional ₹10,00,000 paper account: BUY (LONG) / SELL (EXIT) order ticket, Indian fee modelling (STT, slippage, brokerage), live mark-to-market valuation, open positions and audited order history. Backed by [PaperTradingView.tsx](apps/web/src/components/PaperTradingView.tsx).
+
+### 🛡 Portfolio Risk
+<img src="docs/screenshots/dashboard-risk.png" alt="Portfolio Risk" width="100%"/>
+
+VaR, stress-tests and portfolio-level risk audit. Backed by [PortfolioRiskView.tsx](apps/web/src/components/PortfolioRiskView.tsx).
+
+### 🏆 Strategy Tournaments
+<img src="docs/screenshots/dashboard-tournaments.png" alt="Tournaments" width="100%"/>
+
+Multi-strategy leaderboards ranked by Sharpe, Sortino, Calmar and max drawdown. Backed by [TournamentsView.tsx](apps/web/src/components/TournamentsView.tsx).
+
+### 🤖 Hermes Agent Hub
+<img src="docs/screenshots/dashboard-agents.png" alt="Agent Hub" width="100%"/>
+
+Live deliberations from the 10-agent trading firm — analyst outputs, bull/bear debate, trader plan, risk audit, portfolio memo. Backed by [AgentActivityView.tsx](apps/web/src/components/AgentActivityView.tsx).
+
+### 🔔 Alert Sentinel
+<img src="docs/screenshots/dashboard-alerts.png" alt="Alerts" width="100%"/>
+
+Rule-based tick alerts with history and Telegram dispatch. Backed by [AlertsView.tsx](apps/web/src/components/AlertsView.tsx).
+
+### 🔮 AI Predictions
+<img src="docs/screenshots/dashboard-predictions.png" alt="AI Predictions" width="100%"/>
+
+ML forecasts with confidence intervals, horizon filters and signal strength. Backed by [AIPredictionsView.tsx](apps/web/src/components/AIPredictionsView.tsx).
 
 ### 🏗 System Architecture
 <img src="docs/screenshots/architecture.svg" alt="Architecture" width="100%"/>
