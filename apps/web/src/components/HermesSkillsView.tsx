@@ -31,6 +31,7 @@ import {
   Lock,
   Globe
 } from "lucide-react";
+import { MarketAPI } from "@/lib/api";
 
 interface SkillItem {
   skill_id: string;
@@ -60,11 +61,11 @@ export function HermesSkillsView() {
   const [activeInspectorTab, setActiveInspectorTab] = useState<"sandbox" | "architecture" | "telemetry" | "prompt">("sandbox");
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/v1/skills")
-      .then((res) => res.json())
+    MarketAPI.listSkills()
       .then((data) => {
-        setSkills(data);
-        if (data.length > 0) setActiveSkill(data[0]);
+        const list = (data as unknown) as SkillItem[];
+        setSkills(list);
+        if (list.length > 0) setActiveSkill(list[0]);
         setLoading(false);
       })
       .catch((err) => {

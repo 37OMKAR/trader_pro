@@ -19,6 +19,7 @@ import {
   Send,
   Zap
 } from "lucide-react";
+import { MarketAPI } from "@/lib/api";
 
 export function TalkingAvatarStudio() {
   const [scriptText, setScriptText] = useState(
@@ -89,12 +90,7 @@ export function TalkingAvatarStudio() {
   const handleSynthesizeAudio = async () => {
     setIsGenerating(true);
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/voice/synthesize-briefing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: scriptText, voice: selectedVoice }),
-      });
-      const data = await res.json();
+      const data = await MarketAPI.synthesizeBriefing(scriptText);
       setGeneratedResult(data);
 
       // Speak directly through speakers

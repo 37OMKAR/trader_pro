@@ -22,8 +22,8 @@ class LLMClient:
         self.provider = (provider or os.getenv("DEFAULT_LLM_PROVIDER", "openrouter")).lower()
         self.model = model or os.getenv("DEFAULT_MODEL", "nousresearch/hermes-3-llama-3.1-70b")
         
-        # API Keys
-        self.longcat_key = os.getenv("LONGCAT_API_KEY") or "ak_28o19G0p43Lk2pd2Kq8ve4375eY2e"
+        # API Keys — read from environment only; never fall back to a baked-in value.
+        self.longcat_key = os.getenv("LONGCAT_API_KEY")
         self.openrouter_key = os.getenv("OPENROUTER_API_KEY")
         self.deepseek_key = os.getenv("DEEPSEEK_API_KEY")
         self.tinyfish_key = os.getenv("TINYFISH_API_KEY")
@@ -141,4 +141,39 @@ class LLMClient:
             return data["choices"][0]["message"]["content"]
 
     def _generate_local_reasoning(self, system_prompt: str, user_prompt: str) -> str:
-        return "Deterministic institutional financial intelligence memo synthesized from quantitative data feeds."
+        """Local deterministic responder used when no LLM provider key is configured.
+
+        It does NOT call an LLM — it echoes the question back with a clear
+        disclaimer so the UI / caller can tell apart a real model answer from
+        the offline fallback. Set LONGCAT_API_KEY, OPENROUTER_API_KEY,
+        DEEPSEEK_API_KEY, GEMINI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY
+        to switch to a real model.
+        """
+        question = (user_prompt or "").strip()
+        role_hint = ""
+        sp = (system_prompt or "").lower()
+        if "fundamental" in sp:
+            role_hint = "fundamental valuation and balance-sheet health"
+        elif "technical" in sp:
+            role_hint = "chart structure, moving-average alignment and momentum"
+        elif "sentiment" in sp:
+            role_hint = "flow, option skew, and news tone"
+        elif "macro" in sp or "news" in sp:
+            role_hint = "RBI policy, global cues, commodity and currency context"
+        elif "tutor" in sp or "educator" in sp:
+            role_hint = "an Indian-markets educational walkthrough"
+        else:
+            role_hint = "a quantitative framing of the inputs"
+
+        preview = question if len(question) <= 400 else question[:397] + "..."
+        return (
+            "[OFFLINE REASONING — no LLM provider key configured. "
+            "Set one of LONGCAT_API_KEY / OPENROUTER_API_KEY / DEEPSEEK_API_KEY / "
+            "GEMINI_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY to enable real model output.]\n\n"
+            f"Role: {role_hint}.\n"
+            f"Question considered:\n{preview}\n\n"
+            "Deterministic skeleton response: review the numeric inputs above, "
+            "weight the dominant signal (trend / valuation / flow), check the "
+            "three strongest counter-arguments, and size the conclusion to the "
+            "uncertainty it carries. No model inference was performed."
+        )

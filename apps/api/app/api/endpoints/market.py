@@ -174,6 +174,32 @@ async def get_recent_predictions(limit: int = Query(20, ge=1, le=100)):
     return await PredictionRegistry.get_recent_predictions(limit=limit)
 
 
+@router.get("/predictions-batch")
+async def get_predictions_batch(
+    symbols: str = Query(..., description="Comma-separated list of symbols (e.g. RELIANCE,TCS,HDFCBANK)"),
+    horizon: str = Query("5D", pattern="^(1D|5D|20D)$"),
+):
+    """Generate directional predictions for several symbols in one round-trip.
+
+    Introduced so the AI Predictions UI stops firing N serial requests
+    (one per symbol) on every tab-open.
+    """
+    import asyncio
+    symbol_list = [s.strip().upper() for s in symbols.split(",") if s.strip()]
+    if not symbol_list:
+        return []
+    if len(symbol_list) > 50:
+        raise HTTPException(status_code=400, detail="At most 50 symbols per batch call.")
+    results = await asyncio.gather(
+        *[get_stock_predictions(sym, horizon) for sym in symbol_list],
+        return_exceptions=True,
+    )
+    return [
+        r if not isinstance(r, Exception) else {"symbol": sym, "error": str(r)}
+        for sym, r in zip(symbol_list, results)
+    ]
+
+
 @router.get("/stocks/{symbol}/details")
 async def get_stock_details(symbol: str):
     """

@@ -124,16 +124,48 @@ async def generate_strategy_from_prompt(req: NLStrategyRequest):
 
 @router.post("/backtest")
 async def execute_backtest(
-    strategy: StrategyDefinition = Body(...),
+    body: Dict[str, Any] = Body(...),
     symbol: str = Query("RELIANCE", description="Asset to test on"),
-    initial_capital: float = Query(1_000_000.0, description="Initial capital in INR"),
+    initial_capital: float = Query(1_000_000.0, description="Initial capital (query — legacy clients)"),
 ):
-    """Executes a backtest on historical data with the given strategy DSL."""
-    candles = await market_provider.get_history(symbol.upper(), timeframe=strategy.timeframe, limit=80)
-    
-    result = backtest_engine.run_backtest(
+    """Executes a backtest on historical data with the given strategy DSL.
+
+    Accepts either shape:
+
+    - **Modern (web client):** `{"strategy": {...}, "symbol": "RELIANCE", "capital": 1000000}`
+    - **Legacy:** full `StrategyDefinition` JSON in the body + `?symbol=...&initial_capital=...`
+      query parameters.
+
+    Missing strategy fields are filled with sensible defaults so the Strategy Lab UI
+    does not need to pass the entire schema just to kick off a test.
+    """
+    if isinstance(body, dict) and "strategy" in body and isinstance(body["strategy"], dict):
+        raw = dict(body["strategy"])
+        sym = (body.get("symbol") or symbol or "RELIANCE").upper()
+        capital = float(body.get("capital", body.get("initial_capital", initial_capital)))
+    else:
+        raw = dict(body or {})
+        sym = symbol.upper()
+        capital = float(initial_capital)
+
+    raw.setdefault("strategy_id", "ADHOC_WEB_BACKTEST")
+    raw.setdefault("name", "Ad-hoc web backtest")
+    raw.setdefault("description", "Backtest requested from the web dashboard")
+    raw.setdefault("timeframe", "1D")
+    if "entry_rules" not in raw:
+        raw["entry_rules"] = {
+            "logical_operator": "AND",
+            "conditions": [{"feature": "close", "operator": ">", "threshold": "sma_20"}],
+        }
+    raw.setdefault("risk_management", {"stop_loss_pct": 2.5, "take_profit_pct": 6.0})
+    try:
+        strategy = StrategyDefinition(**raw)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid strategy: {exc}")
+
+    candles = await market_provider.get_history(sym, timeframe=strategy.timeframe, limit=80)
+    return backtest_engine.run_backtest(
         strategy=strategy,
         candles=candles,
-        initial_capital=initial_capital,
+        initial_capital=capital,
     )
-    return result

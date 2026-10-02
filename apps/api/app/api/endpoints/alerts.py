@@ -3,8 +3,9 @@ Market AI — Alerts REST Endpoints
 """
 
 from typing import List
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from services.alert_engine.engine import AlertEngine, AlertRule, TriggeredAlert
+from apps.api.app.core.security import require_api_key
 
 router = APIRouter(prefix="/alerts", tags=["Alerts Engine"])
 
@@ -16,12 +17,12 @@ async def list_alert_rules():
     return engine.get_rules()
 
 
-@router.post("/rules", response_model=AlertRule)
+@router.post("/rules", response_model=AlertRule, dependencies=[Depends(require_api_key)])
 async def create_alert_rule(rule: AlertRule):
     return engine.create_rule(rule)
 
 
-@router.delete("/rules/{rule_id}")
+@router.delete("/rules/{rule_id}", dependencies=[Depends(require_api_key)])
 async def delete_alert_rule(rule_id: str):
     if not engine.delete_rule(rule_id):
         raise HTTPException(status_code=404, detail="Alert rule not found")

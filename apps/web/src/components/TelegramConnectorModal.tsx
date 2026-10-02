@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Send, Bot, CheckCircle2, AlertCircle, RefreshCw, X, Radio, BellRing, Smartphone } from "lucide-react";
+import { MarketAPI } from "@/lib/api";
 
 interface TelegramModalProps {
   isOpen: boolean;
@@ -21,12 +22,7 @@ export function TelegramConnectorModal({ isOpen, onClose }: TelegramModalProps) 
     setIsSending(true);
     setSendResult(null);
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/telegram/test-ping", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: testMessage }),
-      });
-      const data = await res.json();
+      const data = await MarketAPI.telegramTestPing(testMessage);
       setSendResult(data);
     } catch (e) {
       console.error(e);
@@ -40,19 +36,14 @@ export function TelegramConnectorModal({ isOpen, onClose }: TelegramModalProps) 
     setIsSending(true);
     setSendResult(null);
     try {
-      const res = await fetch("http://127.0.0.1:8000/api/v1/telegram/broadcast-alert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          symbol: selectedSymbol,
-          action: action,
-          entry_price: 2500.0,
-          target_1: 2650.0,
-          stop_loss: 2420.0,
-          rationale: "4-Analyst Consensus Breakout Signal",
-        }),
+      const data = await MarketAPI.telegramBroadcast({
+        symbol: selectedSymbol,
+        action,
+        entry_price: 2500.0,
+        target_1: 2650.0,
+        stop_loss: 2420.0,
+        rationale: "4-Analyst Consensus Breakout Signal",
       });
-      const data = await res.json();
       setSendResult(data);
     } catch (e) {
       console.error(e);

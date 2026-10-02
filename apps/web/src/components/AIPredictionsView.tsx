@@ -19,9 +19,7 @@ export function AIPredictionsView({ onSelectStock }: AIPredictionsViewProps) {
   const loadPredictions = async () => {
     setLoading(true);
     try {
-      const results = await Promise.all(
-        symbols.map((sym) => MarketAPI.getStockPrediction(sym, filterHorizon))
-      );
+      const results = await MarketAPI.getStockPredictionsBatch(symbols, filterHorizon);
       setPredictions(results);
     } catch (err) {
       console.error("Error loading predictions:", err);

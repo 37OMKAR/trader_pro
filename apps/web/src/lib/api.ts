@@ -52,6 +52,8 @@ export const MarketAPI = {
   getStockDetails:   (symbol: string)                                        => GET<Record<string, unknown>>(`/market/stocks/${encodeURIComponent(symbol)}/details`),
   getStockPrediction:(symbol: string, horizon?: string)                      =>
     GET<Record<string, unknown>>(`/market/predictions/${encodeURIComponent(symbol)}${horizon ? `?horizon=${horizon}` : ""}`),
+  getStockPredictionsBatch: (symbols: string[], horizon = "5D")              =>
+    GET<Array<Record<string, unknown>>>(`/market/predictions-batch?symbols=${encodeURIComponent(symbols.join(","))}&horizon=${horizon}`),
 
   // ─── Derivatives ─────────────────────────────────────────────────────
   getFnoUniverse:    ()                                                      => GET<Record<string, unknown>[]>("/derivatives/fno-universe"),
@@ -98,6 +100,13 @@ export const MarketAPI = {
   // ─── Voice & Avatar ──────────────────────────────────────────────────
   synthesizeBriefing: (text: string)                                         => POST<Record<string, unknown>>("/voice/synthesize-briefing", { text }),
   generateAvatar:     (text: string)                                         => POST<Record<string, unknown>>("/voice/generate-avatar", { text }),
+
+  // ─── Telegram ────────────────────────────────────────────────────────
+  telegramTestPing:   (message: string)                                      => POST<Record<string, unknown>>("/telegram/test-ping", { message }),
+  telegramBroadcast:  (payload: {
+    symbol: string; action: string;
+    entry_price: number; target_1: number; stop_loss: number; rationale: string;
+  })                                                                         => POST<Record<string, unknown>>("/telegram/broadcast-alert", payload),
 
   // ─── Skills Registry ─────────────────────────────────────────────────
   listSkills:        ()                                                      => GET<Record<string, unknown>[]>("/skills"),

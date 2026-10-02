@@ -5,9 +5,10 @@ Market AI — Telegram Bot & Dispatcher REST Endpoints
 import os
 from pydantic import BaseModel
 from typing import Optional
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from services.notification_connectors.telegram_connector import TelegramConnector
 from packages.market_data.yahoo_provider import YahooFinanceMarketDataProvider
+from apps.api.app.core.security import require_api_key
 
 router = APIRouter(prefix="/telegram", tags=["Telegram Dispatcher"])
 provider = YahooFinanceMarketDataProvider()
@@ -46,7 +47,7 @@ async def get_telegram_status():
     }
 
 
-@router.post("/test-ping")
+@router.post("/test-ping", dependencies=[Depends(require_api_key)])
 async def send_test_ping(req: TelegramTestRequest):
     tg = TelegramConnector(bot_token=req.bot_token, chat_id=req.chat_id)
     success = await tg.send_message(req.message or "🔔 Market AI Hermes Bot: Connection OK!")
@@ -57,7 +58,7 @@ async def send_test_ping(req: TelegramTestRequest):
     }
 
 
-@router.post("/broadcast-alert")
+@router.post("/broadcast-alert", dependencies=[Depends(require_api_key)])
 async def broadcast_trade_alert(req: TelegramAlertRequest):
     tg = TelegramConnector()
     text = tg.format_trade_alert({
