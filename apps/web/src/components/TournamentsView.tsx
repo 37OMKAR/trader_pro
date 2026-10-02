@@ -85,8 +85,15 @@ export function TournamentsView() {
           <div className="terminal-card p-12 text-center text-xs text-cyan-400 animate-pulse">
             Simulating Head-to-Head Strategy Tournament on {asset}...
           </div>
+        ) : !tournamentData?.leaderboard?.length ? (
+          <div className="terminal-card p-12 text-center space-y-2">
+            <div className="text-sm font-semibold text-slate-200">No tournament results for {asset}</div>
+            <div className="text-xs text-[#64748b] max-w-md mx-auto">
+              The tournament engine did not return a leaderboard for this asset. Try a different symbol or re-run the tournament.
+            </div>
+          </div>
         ) : (
-          tournamentData?.leaderboard?.map((entry: any) => {
+          tournamentData.leaderboard.map((entry: any) => {
             const isFirst = entry.rank === 1;
             return (
               <div

@@ -84,7 +84,7 @@ export function StrategyLabView() {
           <button
             onClick={handleRunBacktest}
             disabled={isBacktesting || !selectedStrategy}
-            className="px-4 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold flex items-center gap-2 transition disabled:opacity-50"
+            className="px-4 py-2 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-bold flex items-center gap-2 transition disabled:opacity-50"
           >
             <Play className={`w-4 h-4 fill-current ${isBacktesting ? "animate-spin" : ""}`} />
             <span>{isBacktesting ? "Simulating Trades..." : "Run Backtest"}</span>

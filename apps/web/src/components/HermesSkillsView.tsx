@@ -292,7 +292,30 @@ export function HermesSkillsView() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Skill Cards List */}
         <div className="lg:col-span-6 space-y-3">
-          {filteredSkills.map((skill) => {
+          {loading && (
+            <div className="space-y-3">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="p-4 rounded-xl border border-slate-800/80 bg-slate-900/70 animate-pulse space-y-3">
+                  <div className="h-3 w-32 bg-slate-800 rounded" />
+                  <div className="h-4 w-56 bg-slate-800 rounded" />
+                  <div className="h-3 w-full bg-slate-800/70 rounded" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!loading && filteredSkills.length === 0 && (
+            <div className="p-12 rounded-xl border border-slate-800 bg-slate-900/70 text-center space-y-2">
+              <div className="text-sm font-semibold text-slate-200">No skills match this filter</div>
+              <div className="text-xs text-slate-400 max-w-sm mx-auto">
+                {skills.length === 0
+                  ? "The Hermes registry returned no skills. Start the API, then refresh — twelve skills should appear here."
+                  : "Try a different category or clear the search box."}
+              </div>
+            </div>
+          )}
+
+          {!loading && filteredSkills.map((skill) => {
             const isSelected = activeSkill?.skill_id === skill.skill_id;
             return (
               <div

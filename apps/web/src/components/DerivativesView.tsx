@@ -147,8 +147,17 @@ export function DerivativesView() {
                     Computing Option Chain & Black-Scholes Greeks...
                   </td>
                 </tr>
+              ) : !chain?.strikes?.length ? (
+                <tr>
+                  <td colSpan={11} className="py-12 text-center">
+                    <div className="text-sm font-semibold text-slate-200 mb-1">No option chain for {symbol}</div>
+                    <div className="text-xs text-slate-400 max-w-md mx-auto">
+                      Either {symbol} is not in the F&amp;O universe or the derivatives engine returned no strikes. Try NIFTY 50, BANKNIFTY or RELIANCE from the Underlying selector above.
+                    </div>
+                  </td>
+                </tr>
               ) : (
-                chain?.strikes?.map((row: any) => {
+                chain.strikes.map((row: any) => {
                   const ceBarPct = Math.min(100, Math.round((row.call.open_interest / maxOI) * 100));
                   const peBarPct = Math.min(100, Math.round((row.put.open_interest / maxOI) * 100));
 

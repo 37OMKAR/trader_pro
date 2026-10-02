@@ -3,7 +3,7 @@
 import React from "react";
 import { FiiDiiActivity } from "@/types";
 import { formatINR } from "@/lib/utils";
-import { Building2, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { ArrowLeftRight, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
 interface FiiDiiCardProps {
   fiiDii: FiiDiiActivity | null;
@@ -21,7 +21,7 @@ export function FiiDiiCard({ fiiDii }: FiiDiiCardProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#1e293b]">
         <div className="flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-cyan-400" />
+          <ArrowLeftRight className="w-4 h-4 text-cyan-400" />
           <span className="text-xs font-bold text-white font-mono tracking-wide">FII / DII ACTIVITY</span>
         </div>
         <span

@@ -47,6 +47,10 @@ export function MarketBreadthCard({ breadth }: MarketBreadthCardProps) {
           <div style={{ width: `${unchPct}%` }} className="bg-slate-500 transition-all duration-500" />
           <div style={{ width: `${decPct}%` }} className="bg-rose-400 transition-all duration-500" />
         </div>
+
+        <div className="flex justify-center text-[10px] font-mono text-[#64748b]">
+          Unchanged: {breadth.unchanged} ({unchPct}%)
+        </div>
       </div>
 
       {/* 52W High / Low & Circuits Stats */}

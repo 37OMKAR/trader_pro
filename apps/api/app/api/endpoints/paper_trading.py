@@ -4,6 +4,7 @@ Manages dummy money virtual accounts, live NSE/BSE order matching, database pers
 """
 
 import json
+import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
 from pydantic import BaseModel
@@ -15,6 +16,8 @@ from apps.api.app.db.session import async_session_factory
 from apps.api.app.db.models import PaperAccountModel, PaperTradeModel, PaperPositionModel
 from apps.api.app.core.security import require_api_key, caller_id
 from sqlalchemy import select
+
+logger = logging.getLogger("market_ai.paper_trading")
 
 router = APIRouter(prefix="/paper", tags=["Paper Trading"])
 
@@ -65,12 +68,13 @@ async def get_paper_account_summary(user: str = Depends(caller_id)):
             else:
                 dq = await fallback_provider.get_quote(sym)
                 quotes_map[sym] = dq.last_price
-        except Exception:
+        except Exception as exc:
+            logger.warning("live quote failed for %s (%s); using dev provider", sym, exc)
             try:
                 dq = await fallback_provider.get_quote(sym)
                 quotes_map[sym] = dq.last_price
-            except Exception:
-                pass
+            except Exception as exc2:
+                logger.error("both quote providers failed for %s: %s", sym, exc2)
 
     summary = account.get_portfolio_summary(current_quotes=quotes_map)
 
@@ -96,8 +100,8 @@ async def get_paper_account_summary(user: str = Depends(caller_id)):
                 )
                 session.add(acc_model)
             await session.commit()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("account summary DB sync failed for %s: %s", account.account_id, exc)
 
     return summary
 
@@ -116,11 +120,13 @@ async def place_paper_order(req: OrderPlacementRequest, user: str = Depends(call
         else:
             dev_quote = await fallback_provider.get_quote(sym)
             current_market_price = dev_quote.last_price
-    except Exception:
+    except Exception as exc:
+        logger.warning("live quote failed for %s (%s); using dev provider", sym, exc)
         try:
             dev_quote = await fallback_provider.get_quote(sym)
             current_market_price = dev_quote.last_price
-        except Exception:
+        except Exception as exc2:
+            logger.error("both quote providers failed for %s: %s", sym, exc2)
             raise HTTPException(status_code=404, detail=f"Live market price for {sym} unavailable.")
 
     result = account.place_order(
@@ -155,8 +161,8 @@ async def place_paper_order(req: OrderPlacementRequest, user: str = Depends(call
             )
             session.add(trade_model)
             await session.commit()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.error("trade persistence failed for order %s: %s", result.get("order_id"), exc)
 
     return result
 

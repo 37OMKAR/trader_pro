@@ -74,6 +74,32 @@ export function AIPredictionsView({ onSelectStock }: AIPredictionsViewProps) {
       </div>
 
       {/* Grid of Predictions */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="terminal-card p-4 animate-pulse space-y-3">
+              <div className="h-3 w-20 bg-[#1e293b] rounded" />
+              <div className="h-5 w-32 bg-[#1e293b] rounded" />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="h-12 bg-[#1e293b]/60 rounded" />
+                <div className="h-12 bg-[#1e293b]/60 rounded" />
+              </div>
+              <div className="h-3 w-full bg-[#1e293b]/40 rounded" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && predictions.length === 0 && (
+        <div className="terminal-card p-12 text-center space-y-2">
+          <div className="text-sm font-semibold text-slate-200">No predictions available</div>
+          <div className="text-xs text-[#64748b] max-w-md mx-auto">
+            The prediction engine returned no results for the current universe. Confirm the API is reachable and retry.
+          </div>
+        </div>
+      )}
+
+      {!loading && predictions.length > 0 && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {predictions.map((pred) => {
           const isUp = pred.direction === "UP";
@@ -135,6 +161,7 @@ export function AIPredictionsView({ onSelectStock }: AIPredictionsViewProps) {
           );
         })}
       </div>
+      )}
     </div>
   );
 }

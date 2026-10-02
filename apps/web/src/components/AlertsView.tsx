@@ -133,7 +133,7 @@ export function AlertsView() {
 
             <button
               type="submit"
-              className="w-full py-2 bg-cyan-500 hover:bg-cyan-400 text-black font-bold rounded transition"
+              className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-black font-bold rounded transition"
             >
               Add Active Sentinel Rule
             </button>

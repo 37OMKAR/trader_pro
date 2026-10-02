@@ -45,8 +45,8 @@ export function InteractiveChart({
     }
 
     const dateObj = new Date(c.timestamp);
-    const dateLabel = timeframe === "1D" 
-      ? dateObj.toLocaleDateString("en-IN", { month: "short", day: "numeric" })
+    const dateLabel = timeframe === "1D"
+      ? dateObj.toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "2-digit" })
       : dateObj.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
 
     return {
@@ -55,6 +55,9 @@ export function InteractiveChart({
       sma20,
     };
   });
+
+  const isIndex = /nifty|sensex|vix/i.test(symbol);
+  const unitLabel = isIndex ? "pts" : "₹";
 
   const minPrice = Math.min(...candles.map((c) => c.low || c.close)) * 0.998;
   const maxPrice = Math.max(...candles.map((c) => c.high || c.close)) * 1.002;
@@ -76,7 +79,7 @@ export function InteractiveChart({
             onClick={() => setShowSMA(!showSMA)}
             className={`text-xs px-2.5 py-1 rounded font-mono flex items-center gap-1.5 transition ${
               showSMA
-                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
+                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
                 : "bg-[#151b2c] text-[#64748b] border border-[#1e293b]"
             }`}
           >
@@ -120,7 +123,7 @@ export function InteractiveChart({
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.6} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.25} />
 
             <XAxis
               dataKey="dateLabel"
@@ -138,6 +141,7 @@ export function InteractiveChart({
               tickLine={false}
               axisLine={{ stroke: "#1e293b" }}
               tickFormatter={(val) => formatNumber(val, 1)}
+              label={{ value: unitLabel, angle: 0, position: "insideTopRight", fill: "#64748b", fontSize: 10, dy: -8 }}
             />
 
             <Tooltip
@@ -180,7 +184,8 @@ export function InteractiveChart({
               <Line
                 type="monotone"
                 dataKey="sma20"
-                stroke="#f59e0b"
+                stroke="#67e8f9"
+                strokeDasharray="4 2"
                 strokeWidth={1.5}
                 dot={false}
                 name="SMA 20"

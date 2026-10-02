@@ -88,7 +88,7 @@ export function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
         {navSections.map((sec) => (
           <div key={sec.title}>
-            <div className="px-3 text-[11px] font-semibold text-[#475569] tracking-wider uppercase mb-1.5">
+            <div className="px-3 text-[10px] font-semibold text-[#475569] tracking-widest uppercase mb-1.5">
               {sec.title}
             </div>
             <div className="space-y-0.5">
